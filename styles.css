@@ -314,7 +314,7 @@ body {
   color: #051a12;
 }
 
-#initial-investment, #investment-date {
+#initial-investment, #investment-date, .custom-select {
   width: 100%;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--border-color);
@@ -323,6 +323,28 @@ body {
   color: #ffffff;
   font-family: var(--font-mono);
   font-weight: 600;
+  outline: none;
+}
+
+.custom-select option {
+  background: #121826;
+  color: #ffffff;
+}
+
+.table-search-box input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  width: 260px;
+}
+
+.table-search-box input:focus {
+  border-color: var(--primary-accent);
+  outline: none;
 }
 
 #investment-date::-webkit-calendar-picker-indicator {

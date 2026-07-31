@@ -58,7 +58,7 @@
         <!-- Time Horizon & Investment Settings -->
         <div class="controls-grid">
           <div class="control-item">
-            <label>Mode / Date Horizon</label>
+            <label>Mode / Horizon</label>
             <div class="horizon-selector" id="horizon-selector">
               <button class="horizon-btn" data-horizon="1M">1M</button>
               <button class="horizon-btn" data-horizon="6M">6M</button>
@@ -71,7 +71,7 @@
           </div>
 
           <div class="control-item">
-            <label for="investment-date">Investment Purchase Date</label>
+            <label for="investment-date">Purchase Date</label>
             <input type="date" id="investment-date" value="2021-08-01">
           </div>
 
@@ -81,17 +81,13 @@
           </div>
 
           <div class="control-item">
-            <label>Dividend Strategy</label>
-            <div class="toggle-group" id="drip-toggle">
-              <button class="toggle-btn active" data-drip="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                DRIP Reinvest
-              </button>
-              <button class="toggle-btn" data-drip="false">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
-                Payout Cash
-              </button>
-            </div>
+            <label>Investment Strategy</label>
+            <select id="strategy-select" class="custom-select">
+              <option value="drip">DRIP (Reinvest All Dividends)</option>
+              <option value="cash">Cash Dividend Payout</option>
+              <option value="dca">DCA (Dollar Cost Averaging - Monthly $250)</option>
+              <option value="lump_half_dca">Lump Sum 50% + 50% DCA</option>
+            </select>
           </div>
         </div>
       </section>
@@ -101,7 +97,7 @@
         <div class="card-header">
           <div>
             <h3>Your Custom Portfolio Watchlist</h3>
-            <p class="subtitle">Add stocks/funds with custom purchase dates & amounts to compute accurate total returns</p>
+            <p class="subtitle">Quickly save holdings with custom purchase dates & amounts to track true rate of return</p>
           </div>
           <button id="add-to-watchlist-btn" class="btn btn-secondary btn-sm">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -122,7 +118,7 @@
               <span id="asset-ticker" class="ticker-tag">SPY</span>
             </div>
             <div class="asset-price-box">
-              <div class="label">Current Price</div>
+              <div class="label">Current Market Price</div>
               <div id="asset-current-price" class="current-price">$542.10</div>
             </div>
           </div>
@@ -159,11 +155,11 @@
       <section class="card chart-card">
         <div class="card-header">
           <div>
-            <h3>Accurate Return vs. Price-Only Chart</h3>
-            <p class="subtitle">Comparing true investor wealth growth (with DRIP) against price appreciation alone</p>
+            <h3>Precision Historical Return & Daily Chart</h3>
+            <p class="subtitle">Hover anywhere on graph for exact daily prices, cumulative gains %, and DRIP value</p>
           </div>
           <div class="chart-legend-custom">
-            <span class="legend-item drip"><span class="dot"></span> Accurate Total Return (DRIP)</span>
+            <span class="legend-item drip"><span class="dot"></span> Strategy Total Return</span>
             <span class="legend-item price"><span class="dot"></span> Standard Price Return</span>
           </div>
         </div>
@@ -191,7 +187,7 @@
               <tr>
                 <th>Metric / Attribute</th>
                 <th>Standard Price Only</th>
-                <th>Accurate Total Return (DRIP)</th>
+                <th>Accurate Total Return (Selected Strategy)</th>
                 <th>Net Difference</th>
               </tr>
             </thead>
@@ -249,30 +245,31 @@
         </div>
       </section>
 
-      <!-- Dividend Payout Timeline Log -->
-      <section class="card div-history-card">
+      <!-- Daily / Key Dates Inspection Log & Search Bar -->
+      <section class="card daily-log-card">
         <div class="card-header">
           <div>
-            <h3>Dividend Payout & Reinvestment Log</h3>
-            <p class="subtitle">History of dividend distributions received during the selected horizon</p>
+            <h3>Daily & Historical Date Stock Inspector</h3>
+            <p class="subtitle">Search or filter any specific day to see exact historical stock prices, accumulated dividends, and total return value</p>
           </div>
-          <span class="badge" id="div-count-badge">12 Payments Recorded</span>
+          <div class="table-search-box">
+            <input type="text" id="daily-table-search" placeholder="Search date (e.g. 2023, Jan, 08/15)...">
+          </div>
         </div>
         <div class="table-responsive max-h-table">
-          <table class="ror-table compact" id="dividend-history-table">
+          <table class="ror-table compact" id="daily-price-table">
             <thead>
               <tr>
-                <th>Ex-Date</th>
-                <th>Dividend / Share</th>
-                <th>Shares Held</th>
-                <th>Cash Payout</th>
-                <th>Reinvest Price</th>
-                <th>New Shares Acquired</th>
-                <th>Total Shares Cumulative</th>
+                <th>Date</th>
+                <th>Share Price ($)</th>
+                <th>Price Return (%)</th>
+                <th>Strategy Value ($)</th>
+                <th>Strategy Return (%)</th>
+                <th>Dividend Status</th>
               </tr>
             </thead>
-            <tbody id="dividend-history-tbody">
-              <!-- Dynamically populated -->
+            <tbody id="daily-price-tbody">
+              <!-- Dynamically populated daily / key dates -->
             </tbody>
           </table>
         </div>

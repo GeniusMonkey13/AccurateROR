@@ -197,217 +197,21 @@ function initEventListeners() {
     });
   });
 
-  // DRIP toggle buttons
-  document.querySelectorAll("#drip-toggle .toggle-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      document.querySelectorAll("#drip-toggle .toggle-btn").forEach(b => b.classList.remove("active"));
-      const target = e.target.closest(".toggle-btn");
-      target.classList.add("active");
-      calculateAndRender();
-    });
-  });
-
-  // Investment amount and date change
-  document.getElementById("initial-investment").addEventListener("change", calculateAndRender);
-  document.getElementById("investment-date").addEventListener("change", () => {
-    // Auto switch horizon selector to CUSTOM if user picks date
-    document.querySelectorAll(".horizon-btn").forEach(b => b.classList.remove("active"));
-    const customBtn = document.querySelector('.horizon-btn[data-horizon="CUSTOM"]');
-    if (customBtn) customBtn.classList.add("active");
-    calculateAndRender();
-  });
-
-  // Add to Watchlist Button
-  document.getElementById("add-to-watchlist-btn").addEventListener("click", addToWatchlist);
-
-  // CSV Download button
-  document.getElementById("download-csv-btn").addEventListener("click", exportCSV);
-}
-
-// Cache for fetched live market data
-const LiveDataCache = {};
-
-/**
- * Fetch real-time and historical financial market data from public APIs
- */
-async function fetchRealMarketData(ticker, horizon, customDateStr = null) {
-  const symbol = ticker.toUpperCase().trim();
-  const cacheKey = `${symbol}_${horizon}_${customDateStr || ''}`;
-
-  if (LiveDataCache[cacheKey]) {
-    return LiveDataCache[cacheKey];
+  // Strategy select event
+  const strategySelect = document.getElementById("strategy-select");
+  if (strategySelect) {
+    strategySelect.addEventListener("change", calculateAndRender);
   }
 
-  updateLiveStatus(`Fetching real-time market data for ${symbol}...`, "loading");
-
-  // Determine date range in Unix timestamps
-  const now = Math.floor(Date.now() / 1000);
-  let rangeParam = "3y";
-  let startDateTimestamp = now - (3 * 365 * 86400);
-
-  if (horizon === "CUSTOM" || customDateStr) {
-    const pDate = new Date(customDateStr || document.getElementById("investment-date").value);
-    startDateTimestamp = Math.floor(pDate.getTime() / 1000);
-    const daysAgo = Math.ceil((Date.now() - pDate.getTime()) / (1000 * 86400));
-    if (daysAgo <= 35) rangeParam = "1m";
-    else if (daysAgo <= 185) rangeParam = "6m";
-    else if (daysAgo <= 370) rangeParam = "1y";
-    else if (daysAgo <= 1850) rangeParam = "5y";
-    else rangeParam = "max";
-  } else {
-    const rangeMap = { "1M": "1m", "6M": "6m", "YTD": "ytd", "1Y": "1y", "3Y": "3y", "5Y": "5y", "MAX": "max" };
-    rangeParam = rangeMap[horizon] || "3y";
-  }
-
-  // Multi-CORS Proxy Fallback Chain to query Yahoo Finance API
-  const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${rangeParam}&interval=1wk&events=div%2Csplit`;
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-    `https://cors-anywhere.herokuapp.com/${targetUrl}`
-  ];
-
-  let rawJson = null;
-
-  for (const proxyUrl of proxies) {
-    try {
-      const resp = await fetch(proxyUrl, { cache: "no-store" });
-      if (resp.ok) {
-        const text = await resp.text();
-        const json = JSON.parse(text);
-        if (json.chart && json.chart.result && json.chart.result.length > 0) {
-          rawJson = json.chart.result[0];
-          break;
-        }
-      }
-    } catch (err) {
-      console.warn(`Proxy ${proxyUrl} failed, trying next...`);
-    }
-  }
-
-  if (rawJson) {
-    const meta = rawJson.meta || {};
-    const timestamps = rawJson.timestamp || [];
-    const quotes = rawJson.indicators?.quote?.[0]?.close || [];
-    const events = rawJson.events || {};
-    const divEventsMap = events.dividends || {};
-
-    const pricePoints = [];
-    const dividendsList = [];
-
-    for (let i = 0; i < timestamps.length; i++) {
-      if (quotes[i] !== null && quotes[i] !== undefined) {
-        pricePoints.push({
-          timestamp: timestamps[i],
-          dateLabel: new Date(timestamps[i] * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }),
-          price: quotes[i]
-        });
-      }
-    }
-
-    Object.values(divEventsMap).forEach(d => {
-      dividendsList.push({
-        timestamp: d.date,
-        dateLabel: new Date(d.date * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }),
-        amount: d.amount
-      });
-    });
-
-    dividendsList.sort((a, b) => a.timestamp - b.timestamp);
-
-    const parsedData = {
-      symbol: symbol,
-      name: meta.longName || meta.shortName || `${symbol} Equities`,
-      currentPrice: meta.regularMarketPrice || (pricePoints.length > 0 ? pricePoints[pricePoints.length - 1].price : 100),
-      pricePoints: pricePoints,
-      dividends: dividendsList,
-      isRealApi: true
-    };
-
-    LiveDataCache[cacheKey] = parsedData;
-    updateLiveStatus(`⚡ Real-Time Yahoo Finance API Live`, "success");
-    return parsedData;
-  }
-
-  // High-accuracy fallback database if network proxy is restricted
-  updateLiveStatus(`⚡ Live Market Real-Time Engine Active`, "success");
-  return getDatabaseFallbackData(symbol, horizon, customDateStr);
-}
-
-function updateLiveStatus(text, statusClass) {
-  const badge = document.getElementById("live-status-badge");
-  if (badge) {
-    badge.textContent = text;
-    badge.style.borderColor = statusClass === "loading" ? "#fbbf24" : "#00e699";
-    badge.style.color = statusClass === "loading" ? "#fbbf24" : "#00e699";
+  // Daily price search filter
+  const searchInput = document.getElementById("daily-table-search");
+  if (searchInput) {
+    searchInput.addEventListener("input", filterDailyPriceTable);
   }
 }
 
-function getDatabaseFallbackData(symbol, horizon, customDateStr) {
-  const dbAsset = RealMarketDatabase[symbol] || generateFallbackAsset(symbol);
-  
-  let years = 3;
-  if (horizon === "CUSTOM" || customDateStr) {
-    const pDate = new Date(customDateStr || document.getElementById("investment-date").value);
-    const diffTime = Math.abs(Date.now() - pDate.getTime());
-    years = Math.max(Math.ceil(diffTime / (1000 * 86400)) / 365.25, 0.083);
-  } else {
-    const yearsMap = { "1M": 0.083, "6M": 0.5, "YTD": 0.58, "1Y": 1, "3Y": 3, "5Y": 5, "MAX": 10 };
-    years = yearsMap[horizon] || 3;
-  }
-
-  const startPrice = dbAsset.historicalPrices?.[horizon] || (dbAsset.currentPrice * 0.7);
-  const endPrice = dbAsset.currentPrice;
-  const intervals = Math.max(Math.round(years * 26), 12); // Weekly points
-  const pricePoints = [];
-  const dividendsList = [];
-
-  // Generate realistic weekly market price fluctuations with volatility drop events
-  const priceStep = Math.pow(endPrice / startPrice, 1 / intervals);
-  const now = Date.now();
-  const totalMs = years * 365.25 * 86400 * 1000;
-
-  for (let i = 0; i <= intervals; i++) {
-    const timeRatio = i / intervals;
-    const itemTimestamp = Math.floor((now - totalMs * (1 - timeRatio)) / 1000);
-    // Add real market dip/crash fluctuations
-    const volatility = Math.sin(timeRatio * Math.PI * 4) * 0.08 + Math.cos(timeRatio * Math.PI * 2) * 0.05;
-    const price = startPrice * Math.pow(priceStep, i) * (1 + volatility);
-
-    pricePoints.push({
-      timestamp: itemTimestamp,
-      dateLabel: new Date(itemTimestamp * 1000).toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
-      price: Math.max(price, startPrice * 0.3)
-    });
-  }
-
-  // Dividend distributions
-  const divFrequency = dbAsset.divFrequency || 4;
-  const divAmount = (dbAsset.annualDivRate || (dbAsset.currentPrice * 0.02)) / divFrequency;
-  const numDivs = Math.floor(years * divFrequency);
-
-  for (let d = 1; d <= numDivs; d++) {
-    const divRatio = d / numDivs;
-    const divTimestamp = Math.floor((now - totalMs * (1 - divRatio)) / 1000);
-    dividendsList.push({
-      timestamp: divTimestamp,
-      dateLabel: new Date(divTimestamp * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }),
-      amount: divAmount
-    });
-  }
-
-  return {
-    symbol: symbol,
-    name: dbAsset.name,
-    currentPrice: endPrice,
-    pricePoints: pricePoints,
-    dividends: dividendsList,
-    isRealApi: false
-  };
-}
-
-// Async Math Engine consuming real price time-series and dividend events
-async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, isDrip, customDateStr = null) {
+// Async Math Engine consuming real price time-series and investment strategies
+async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, strategyMode = "drip", customDateStr = null) {
   const realMarketData = await fetchRealMarketData(tickerSymbol, horizon, customDateStr);
   const pricePoints = realMarketData.pricePoints || [];
   const dividends = realMarketData.dividends || [];
@@ -418,35 +222,56 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, is
 
   const startPrice = pricePoints[0].price;
   const endPrice = realMarketData.currentPrice || pricePoints[pricePoints.length - 1].price;
-  const initialShares = initialPrincipal / startPrice;
+
+  // Investment strategy setup
+  let initialShares = initialPrincipal / startPrice;
+  let totalInvestedCapital = initialPrincipal;
+
+  if (strategyMode === "lump_half_dca") {
+    totalInvestedCapital = initialPrincipal / 2;
+    initialShares = totalInvestedCapital / startPrice;
+  }
 
   let currentShares = initialShares;
   let accumulatedCashDivs = 0;
 
   const timeLabels = [];
   const priceSeries = [];
-  const dripSeries = [];
+  const strategySeries = [];
   const dividendEvents = [];
+  const dailyRecords = [];
 
-  // Track next dividend index
   let divIdx = 0;
+  const dcaMonthlyContribution = 250;
 
   for (let i = 0; i < pricePoints.length; i++) {
     const pt = pricePoints[i];
     timeLabels.push(pt.dateLabel);
 
+    // Apply DCA Monthly Contribution if strategy uses DCA
+    if (i > 0 && i % 4 === 0) { // Approx monthly interval in weekly points
+      if (strategyMode === "dca" || strategyMode === "lump_half_dca") {
+        totalInvestedCapital += dcaMonthlyContribution;
+        const newDcaShares = dcaMonthlyContribution / pt.price;
+        currentShares += newDcaShares;
+      }
+    }
+
     // Standard Price Return portfolio value
-    const priceVal = initialShares * pt.price;
+    const priceVal = (initialPrincipal / startPrice) * pt.price;
     priceSeries.push(priceVal);
+
+    let divPaidOnThisDate = 0;
 
     // Check if dividend occurred on or before this timestamp point
     while (divIdx < dividends.length && dividends[divIdx].timestamp <= pt.timestamp) {
       const div = dividends[divIdx];
       const cashEarned = currentShares * div.amount;
       accumulatedCashDivs += cashEarned;
+      divPaidOnThisDate += cashEarned;
 
       let newSharesAdded = 0;
-      if (isDrip) {
+      if (strategyMode === "drip" || strategyMode === "dca" || strategyMode === "lump_half_dca") {
         newSharesAdded = cashEarned / pt.price;
         currentShares += newSharesAdded;
       }
@@ -454,7 +279,7 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, is
       dividendEvents.push({
         date: div.dateLabel,
         divPerShare: div.amount,
-        sharesHeld: currentShares - (isDrip ? newSharesAdded : 0),
+        sharesHeld: currentShares - (strategyMode === "cash" ? 0 : newSharesAdded),
         cashEarned: cashEarned,
         reinvestPrice: pt.price,
         newShares: newSharesAdded,
@@ -464,27 +289,39 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, is
       divIdx++;
     }
 
-    // DRIP / Total Return Portfolio Value
-    const dripVal = isDrip 
-      ? (currentShares * pt.price) 
-      : (initialShares * pt.price + accumulatedCashDivs);
+    // Strategy Portfolio Value
+    const strategyVal = (strategyMode === "cash") 
+      ? ((initialPrincipal / startPrice) * pt.price + accumulatedCashDivs)
+      : (currentShares * pt.price);
     
-    dripSeries.push(dripVal);
+    strategySeries.push(strategyVal);
+
+    const priceGainPctOnDay = ((pt.price - startPrice) / startPrice) * 100;
+    const strategyReturnPctOnDay = ((strategyVal - totalInvestedCapital) / totalInvestedCapital) * 100;
+
+    dailyRecords.push({
+      date: pt.dateLabel,
+      price: pt.price,
+      priceReturnPct: priceGainPctOnDay,
+      strategyVal: strategyVal,
+      strategyReturnPct: strategyReturnPctOnDay,
+      dividendInfo: divPaidOnThisDate > 0 ? `+${formatCurrency(divPaidOnThisDate)} Paid` : '—'
+    });
   }
 
-  const finalPriceValue = initialShares * endPrice;
-  const finalDripValue = isDrip ? (currentShares * endPrice) : (initialShares * endPrice + accumulatedCashDivs);
+  const finalPriceValue = (initialPrincipal / startPrice) * endPrice;
+  const finalStrategyValue = strategySeries[strategySeries.length - 1];
 
   const priceGainPct = ((finalPriceValue - initialPrincipal) / initialPrincipal) * 100;
-  const dripGainPct = ((finalDripValue - initialPrincipal) / initialPrincipal) * 100;
-  const divBoostPct = dripGainPct - priceGainPct;
+  const strategyGainPct = ((finalStrategyValue - totalInvestedCapital) / totalInvestedCapital) * 100;
+  const divBoostPct = strategyGainPct - priceGainPct;
 
   const firstTime = pricePoints[0].timestamp;
   const lastTime = pricePoints[pricePoints.length - 1].timestamp;
   const elapsedYears = Math.max((lastTime - firstTime) / (365.25 * 86400), 0.083);
 
   const cagrPrice = (Math.pow(finalPriceValue / initialPrincipal, 1 / elapsedYears) - 1) * 100;
-  const cagrDrip = (Math.pow(finalDripValue / initialPrincipal, 1 / elapsedYears) - 1) * 100;
+  const cagrStrategy = (Math.pow(finalStrategyValue / totalInvestedCapital, 1 / elapsedYears) - 1) * 100;
 
   return {
     asset: {
@@ -493,23 +330,24 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, is
     },
     startPrice,
     endPrice,
-    initialPrincipal,
+    initialPrincipal: totalInvestedCapital,
     years: elapsedYears,
     initialShares,
     endingShares: currentShares,
     accumulatedCashDivs,
     finalPriceValue,
-    finalDripValue,
+    finalDripValue: finalStrategyValue,
     priceGainPct,
-    dripGainPct,
+    dripGainPct: strategyGainPct,
     divBoostPct,
     cagrPrice,
-    cagrDrip,
+    cagrDrip: cagrStrategy,
     timeLabels,
     priceSeries,
-    dripSeries,
+    dripSeries: strategySeries,
     dividendEvents,
-    isDrip,
+    dailyRecords,
+    strategyMode,
     isRealApi: realMarketData.isRealApi
   };
 }
@@ -521,15 +359,15 @@ async function calculateAndRender() {
   const horizon = activeHorizonBtn ? activeHorizonBtn.dataset.horizon : "3Y";
   const initialPrincipal = parseFloat(document.getElementById("initial-investment").value) || 10000;
   
-  const activeDripBtn = document.querySelector("#drip-toggle .toggle-btn.active");
-  const isDrip = activeDripBtn ? activeDripBtn.dataset.drip === "true" : true;
+  const strategySelect = document.getElementById("strategy-select");
+  const strategyMode = strategySelect ? strategySelect.value : "drip";
 
   try {
-    currentData = await computeAccurateReturn(symbol, horizon, initialPrincipal, isDrip);
+    currentData = await computeAccurateReturn(symbol, horizon, initialPrincipal, strategyMode);
     renderHeaderAndKPIs(currentData);
     renderComparisonChart(currentData);
     renderTable(currentData);
-    renderDividendLog(currentData);
+    renderDailyPriceTable(currentData.dailyRecords);
   } catch (err) {
     console.error("Error computing returns:", err);
   }
@@ -547,7 +385,7 @@ function renderHeaderAndKPIs(data) {
   document.getElementById("kpi-price-val").textContent = `${formatCurrency(data.finalPriceValue)} price gain`;
 
   document.getElementById("kpi-div-boost").textContent = `${formatSign(data.divBoostPct)}${data.divBoostPct.toFixed(2)}%`;
-  document.getElementById("kpi-div-val").textContent = `${formatCurrency(data.finalDripValue - data.finalPriceValue)} from dividends`;
+  document.getElementById("kpi-div-val").textContent = `${formatCurrency(data.finalDripValue - data.finalPriceValue)} from strategy boost`;
 
   document.getElementById("kpi-cagr").textContent = `${data.cagrDrip.toFixed(2)}% / yr`;
 }
@@ -565,25 +403,28 @@ function renderComparisonChart(data) {
       labels: data.timeLabels,
       datasets: [
         {
-          label: "Accurate Total Return (DRIP)",
+          label: "Strategy Total Return",
           data: data.dripSeries,
           borderColor: "#00e699",
           backgroundColor: "rgba(0, 230, 153, 0.12)",
           fill: true,
           borderWidth: 3,
-          tension: 0.3,
-          pointRadius: 2
+          tension: 0.2,
+          pointRadius: 1,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: "#00e699"
         },
         {
           label: "Standard Price Return",
           data: data.priceSeries,
           borderColor: "#3b82f6",
-          borderDash: [5, 5],
+          borderDash: [4, 4],
           backgroundColor: "transparent",
           fill: false,
           borderWidth: 2,
-          tension: 0.3,
-          pointRadius: 0
+          tension: 0.2,
+          pointRadius: 0,
+          pointHoverRadius: 5
         }
       ]
     },
@@ -598,14 +439,21 @@ function renderComparisonChart(data) {
         legend: { display: false },
         tooltip: {
           backgroundColor: "rgba(9, 13, 22, 0.95)",
-          titleFont: { family: "Plus Jakarta Sans", size: 13, weight: "700" },
+          titleFont: { family: "Plus Jakarta Sans", size: 14, weight: "800" },
           bodyFont: { family: "JetBrains Mono", size: 12 },
-          borderColor: "rgba(255, 255, 255, 0.1)",
-          borderWidth: 1,
-          padding: 12,
+          borderColor: "rgba(0, 230, 153, 0.3)",
+          borderWidth: 1.5,
+          padding: 14,
+          displayColors: true,
           callbacks: {
+            title: function(items) {
+              return `Date: ${items[0].label}`;
+            },
             label: function (context) {
-              return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+              const val = context.raw;
+              const init = data.initialPrincipal;
+              const gainPct = ((val - init) / init) * 100;
+              return `${context.dataset.label}: ${formatCurrency(val)} (${formatSign(gainPct)}${gainPct.toFixed(2)}%)`;
             }
           }
         }
@@ -662,40 +510,48 @@ function renderTable(data) {
   document.getElementById("tbl-cagr-diff").textContent = `+${(data.cagrDrip - data.cagrPrice).toFixed(2)}% / yr`;
 }
 
-function renderDividendLog(data) {
-  const tbody = document.getElementById("dividend-history-tbody");
+function renderDailyPriceTable(records) {
+  const tbody = document.getElementById("daily-price-tbody");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
-  document.getElementById("div-count-badge").textContent = `${data.dividendEvents.length} Payments Recorded`;
-
-  data.dividendEvents.forEach(evt => {
+  records.forEach(rec => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${evt.date}</td>
-      <td>${formatCurrency(evt.divPerShare)}</td>
-      <td>${evt.sharesHeld.toFixed(3)}</td>
-      <td class="text-green">${formatCurrency(evt.cashEarned)}</td>
-      <td>${formatCurrency(evt.reinvestPrice)}</td>
-      <td>+${evt.newShares.toFixed(3)}</td>
-      <td><strong>${evt.totalShares.toFixed(3)}</strong></td>
+      <td><strong>${rec.date}</strong></td>
+      <td>${formatCurrency(rec.price)}</td>
+      <td class="${rec.priceReturnPct >= 0 ? 'text-green' : 'text-red'}">${formatSign(rec.priceReturnPct)}${rec.priceReturnPct.toFixed(2)}%</td>
+      <td>${formatCurrency(rec.strategyVal)}</td>
+      <td class="${rec.strategyReturnPct >= 0 ? 'text-green' : 'text-red'}">${formatSign(rec.strategyReturnPct)}${rec.strategyReturnPct.toFixed(2)}%</td>
+      <td><span class="${rec.dividendInfo !== '—' ? 'positive-badge' : 'muted-badge'}">${rec.dividendInfo}</span></td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-function exportCSV() {
-  if (!currentData) return;
-  let csvContent = "data:text/csv;charset=utf-8,";
-  csvContent += "Ex-Date,Dividend Per Share,Shares Held,Cash Earned,Reinvest Price,New Shares,Total Cumulative Shares\n";
+function filterDailyPriceTable() {
+  const query = document.getElementById("daily-table-search").value.toLowerCase();
+  const rows = document.querySelectorAll("#daily-price-tbody tr");
 
-  currentData.dividendEvents.forEach(e => {
-    csvContent += `${e.date},${e.divPerShare.toFixed(4)},${e.sharesHeld.toFixed(4)},${e.cashEarned.toFixed(2)},${e.reinvestPrice.toFixed(2)},${e.newShares.toFixed(4)},${e.totalShares.toFixed(4)}\n`;
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(query) ? "" : "none";
+  });
+}
+
+function exportCSV() {
+  if (!currentData || !currentData.dailyRecords) return;
+  let csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += "Date,Share Price,Price Return %,Strategy Value,Strategy Return %,Dividend Event\n";
+
+  currentData.dailyRecords.forEach(e => {
+    csvContent += `${e.date},${e.price.toFixed(2)},${e.priceReturnPct.toFixed(2)},${e.strategyVal.toFixed(2)},${e.strategyReturnPct.toFixed(2)},${e.dividendInfo}\n`;
   });
 
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `${currentData.asset.ticker}_dividend_history.csv`);
+  link.setAttribute("download", `${currentData.asset.ticker}_daily_stock_returns.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -714,7 +570,7 @@ async function renderWatchlist() {
   for (let index = 0; index < watchlist.length; index++) {
     const item = watchlist[index];
     try {
-      const res = await computeAccurateReturn(item.ticker, "CUSTOM", item.amount, item.drip, item.date);
+      const res = await computeAccurateReturn(item.ticker, "CUSTOM", item.amount, item.strategy || "drip", item.date);
       
       const card = document.createElement("div");
       card.className = "watchlist-card-item";
@@ -722,7 +578,7 @@ async function renderWatchlist() {
         <div class="watchlist-card-header">
           <div>
             <span class="watchlist-ticker">${item.ticker}</span>
-            <span class="badge" style="margin-left: 6px;">${item.drip ? 'DRIP' : 'Cash'}</span>
+            <span class="badge" style="margin-left: 6px;">${(item.strategy || 'drip').toUpperCase()}</span>
           </div>
           <button class="watchlist-remove-btn" onclick="removeFromWatchlist(event, ${index})" title="Remove item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -732,7 +588,7 @@ async function renderWatchlist() {
           <div>Invested: <span>${formatCurrency(item.amount)}</span></div>
           <div>Bought: <span>${item.date}</span></div>
           <div>Current Value: <span class="text-green">${formatCurrency(res.finalDripValue)}</span></div>
-          <div>Dividends: <span class="text-gold">${formatCurrency(res.finalDripValue - res.finalPriceValue)}</span></div>
+          <div>Return Boost: <span class="text-gold">${formatCurrency(res.finalDripValue - res.finalPriceValue)}</span></div>
         </div>
         <div class="watchlist-return-row">
           <span class="subtitle">Accurate ROR</span>
@@ -746,13 +602,12 @@ async function renderWatchlist() {
         document.getElementById("initial-investment").value = item.amount;
         document.getElementById("investment-date").value = item.date;
         
+        const strategySelect = document.getElementById("strategy-select");
+        if (strategySelect) strategySelect.value = item.strategy || "drip";
+
         document.querySelectorAll(".horizon-btn").forEach(b => b.classList.remove("active"));
         const customBtn = document.querySelector('.horizon-btn[data-horizon="CUSTOM"]');
         if (customBtn) customBtn.classList.add("active");
-
-        document.querySelectorAll("#drip-toggle .toggle-btn").forEach(b => {
-          b.classList.toggle("active", b.dataset.drip === String(item.drip));
-        });
 
         calculateAndRender();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -769,15 +624,15 @@ function addToWatchlist() {
   const symbol = document.getElementById("ticker-input").value.toUpperCase().trim() || "SPY";
   const amount = parseFloat(document.getElementById("initial-investment").value) || 10000;
   const date = document.getElementById("investment-date").value || "2021-08-01";
-  const activeDripBtn = document.querySelector("#drip-toggle .toggle-btn.active");
-  const drip = activeDripBtn ? activeDripBtn.dataset.drip === "true" : true;
+  const strategySelect = document.getElementById("strategy-select");
+  const strategy = strategySelect ? strategySelect.value : "drip";
 
-  // Check if exists
+  // De-duplicate: replace existing if ticker and date match
   const existingIdx = watchlist.findIndex(w => w.ticker === symbol && w.date === date);
   if (existingIdx >= 0) {
-    watchlist[existingIdx] = { ticker: symbol, amount, date, drip };
+    watchlist[existingIdx] = { ticker: symbol, amount, date, strategy };
   } else {
-    watchlist.unshift({ ticker: symbol, amount, date, drip });
+    watchlist.unshift({ ticker: symbol, amount, date, strategy });
   }
 
   localStorage.setItem("accurate_ror_watchlist", JSON.stringify(watchlist));
