@@ -66,18 +66,45 @@
               <button class="horizon-btn" data-horizon="1Y">1Y</button>
               <button class="horizon-btn active" data-horizon="3Y">3Y</button>
               <button class="horizon-btn" data-horizon="5Y">5Y</button>
+              <button class="horizon-btn" data-horizon="MAX">MAX</button>
               <button class="horizon-btn" data-horizon="CUSTOM">Custom Date</button>
             </div>
           </div>
 
-          <div class="control-item">
-            <label for="investment-date">Purchase Date</label>
-            <input type="date" id="investment-date" value="2021-08-01">
+          <div class="control-item date-picker-dropdowns">
+            <label>Purchase Date Selector</label>
+            <div class="dropdown-date-group">
+              <select id="select-year" class="custom-select date-select" title="Select Year">
+                <!-- Dynamically filled with years going back to 1970 -->
+              </select>
+              <select id="select-month" class="custom-select date-select" title="Select Month">
+                <option value="01">Jan (01)</option>
+                <option value="02">Feb (02)</option>
+                <option value="03">Mar (03)</option>
+                <option value="04">Apr (04)</option>
+                <option value="05">May (05)</option>
+                <option value="06">Jun (06)</option>
+                <option value="07">Jul (07)</option>
+                <option value="08" selected>Aug (08)</option>
+                <option value="09">Sep (09)</option>
+                <option value="10">Oct (10)</option>
+                <option value="11">Nov (11)</option>
+                <option value="12">Dec (12)</option>
+              </select>
+              <select id="select-day" class="custom-select date-select" title="Select Day">
+                <!-- Dynamically filled 01-31 -->
+              </select>
+            </div>
           </div>
 
           <div class="control-item">
             <label for="initial-investment">Invested Principal ($)</label>
-            <input type="number" id="initial-investment" value="10000" min="100" step="500">
+            <input type="number" id="initial-investment" value="10000" min="10" step="500">
+          </div>
+
+          <div class="control-item">
+            <label for="custom-shares-input">Optional: Shares Held</label>
+            <input type="number" id="custom-shares-input" placeholder="Auto-calculated" step="0.001">
           </div>
 
           <div class="control-item">
@@ -92,12 +119,12 @@
         </div>
       </section>
 
-      <!-- Custom Watchlist Section -->
+      <!-- Custom Watchlist & Portfolio Customizer Section -->
       <section class="card watchlist-card">
         <div class="card-header">
           <div>
-            <h3>Your Custom Portfolio Watchlist</h3>
-            <p class="subtitle">Quickly save holdings with custom purchase dates & amounts to track true rate of return</p>
+            <h3>Your Custom Portfolio Watchlist & Holdings</h3>
+            <p class="subtitle">Customize multi-asset holdings with custom purchase dates, shares, and dollar amounts</p>
           </div>
           <button id="add-to-watchlist-btn" class="btn btn-secondary btn-sm">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>

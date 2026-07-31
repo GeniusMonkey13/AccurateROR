@@ -166,10 +166,58 @@ const RealMarketDatabase = {
 
 // Application Initialization
 document.addEventListener("DOMContentLoaded", () => {
+  populateDateDropdowns();
   initEventListeners();
   calculateAndRender();
   renderWatchlist();
 });
+
+function populateDateDropdowns() {
+  const yearSelect = document.getElementById("select-year");
+  const daySelect = document.getElementById("select-day");
+
+  if (yearSelect) {
+    yearSelect.innerHTML = "";
+    const currentYear = new Date().getFullYear();
+    // Support historical dates going back to 1970
+    for (let y = currentYear; y >= 1970; y--) {
+      const opt = document.createElement("option");
+      opt.value = y;
+      opt.textContent = y;
+      if (y === 2021) opt.selected = true;
+      yearSelect.appendChild(opt);
+    }
+  }
+
+  if (daySelect) {
+    daySelect.innerHTML = "";
+    for (let d = 1; d <= 31; d++) {
+      const opt = document.createElement("option");
+      const valStr = d < 10 ? `0${d}` : `${d}`;
+      opt.value = valStr;
+      opt.textContent = valStr;
+      if (d === 1) opt.selected = true;
+      daySelect.appendChild(opt);
+    }
+  }
+}
+
+function getSelectedDropdownDate() {
+  const y = document.getElementById("select-year")?.value || "2021";
+  const m = document.getElementById("select-month")?.value || "08";
+  const d = document.getElementById("select-day")?.value || "01";
+  return `${y}-${m}-${d}`;
+}
+
+function setSelectedDropdownDate(dateStr) {
+  if (!dateStr) return;
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    if (document.getElementById("select-year")) document.getElementById("select-year").value = parts[0];
+    if (document.getElementById("select-month")) document.getElementById("select-month").value = parts[1];
+    if (document.getElementById("select-day")) document.getElementById("select-day").value = parts[2];
+  }
+}
 
 function initEventListeners() {
   // Search button & Enter key
@@ -197,6 +245,24 @@ function initEventListeners() {
     });
   });
 
+  // Date select dropdowns change handler
+  ["select-year", "select-month", "select-day"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", () => {
+        document.querySelectorAll(".horizon-btn").forEach(b => b.classList.remove("active"));
+        const customBtn = document.querySelector('.horizon-btn[data-horizon="CUSTOM"]');
+        if (customBtn) customBtn.classList.add("active");
+        calculateAndRender();
+      });
+    }
+  });
+
+  // Inputs change handler
+  document.getElementById("initial-investment").addEventListener("change", calculateAndRender);
+  const sharesInput = document.getElementById("custom-shares-input");
+  if (sharesInput) sharesInput.addEventListener("change", calculateAndRender);
+
   // Strategy select event
   const strategySelect = document.getElementById("strategy-select");
   if (strategySelect) {
@@ -208,11 +274,20 @@ function initEventListeners() {
   if (searchInput) {
     searchInput.addEventListener("input", filterDailyPriceTable);
   }
+
+  // Add to Watchlist Button
+  const addBtn = document.getElementById("add-to-watchlist-btn");
+  if (addBtn) addBtn.addEventListener("click", addToWatchlist);
+
+  // CSV Download button
+  const csvBtn = document.getElementById("download-csv-btn");
+  if (csvBtn) csvBtn.addEventListener("click", exportCSV);
 }
 
 // Async Math Engine consuming real price time-series and investment strategies
-async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, strategyMode = "drip", customDateStr = null) {
-  const realMarketData = await fetchRealMarketData(tickerSymbol, horizon, customDateStr);
+async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, strategyMode = "drip", customDateStr = null, customSharesCount = null) {
+  const selectedDate = customDateStr || getSelectedDropdownDate();
+  const realMarketData = await fetchRealMarketData(tickerSymbol, horizon, selectedDate);
   const pricePoints = realMarketData.pricePoints || [];
   const dividends = realMarketData.dividends || [];
 
@@ -223,11 +298,16 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
   const startPrice = pricePoints[0].price;
   const endPrice = realMarketData.currentPrice || pricePoints[pricePoints.length - 1].price;
 
-  // Investment strategy setup
-  let initialShares = initialPrincipal / startPrice;
-  let totalInvestedCapital = initialPrincipal;
+  // Custom shares count or calculated initial shares
+  let initialShares = customSharesCount && !isNaN(customSharesCount) && customSharesCount > 0
+    ? parseFloat(customSharesCount)
+    : initialPrincipal / startPrice;
 
-  if (strategyMode === "lump_half_dca") {
+  let totalInvestedCapital = customSharesCount && !isNaN(customSharesCount) && customSharesCount > 0
+    ? initialShares * startPrice
+    : initialPrincipal;
+
+  if (strategyMode === "lump_half_dca" && (!customSharesCount || isNaN(customSharesCount))) {
     totalInvestedCapital = initialPrincipal / 2;
     initialShares = totalInvestedCapital / startPrice;
   }
@@ -249,7 +329,7 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
     timeLabels.push(pt.dateLabel);
 
     // Apply DCA Monthly Contribution if strategy uses DCA
-    if (i > 0 && i % 4 === 0) { // Approx monthly interval in weekly points
+    if (i > 0 && i % 4 === 0) { // Approx monthly interval
       if (strategyMode === "dca" || strategyMode === "lump_half_dca") {
         totalInvestedCapital += dcaMonthlyContribution;
         const newDcaShares = dcaMonthlyContribution / pt.price;
@@ -258,7 +338,7 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
     }
 
     // Standard Price Return portfolio value
-    const priceVal = (initialPrincipal / startPrice) * pt.price;
+    const priceVal = initialShares * pt.price;
     priceSeries.push(priceVal);
 
     let divPaidOnThisDate = 0;
@@ -291,7 +371,7 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
 
     // Strategy Portfolio Value
     const strategyVal = (strategyMode === "cash") 
-      ? ((initialPrincipal / startPrice) * pt.price + accumulatedCashDivs)
+      ? (initialShares * pt.price + accumulatedCashDivs)
       : (currentShares * pt.price);
     
     strategySeries.push(strategyVal);
@@ -309,10 +389,10 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
     });
   }
 
-  const finalPriceValue = (initialPrincipal / startPrice) * endPrice;
+  const finalPriceValue = initialShares * endPrice;
   const finalStrategyValue = strategySeries[strategySeries.length - 1];
 
-  const priceGainPct = ((finalPriceValue - initialPrincipal) / initialPrincipal) * 100;
+  const priceGainPct = ((finalPriceValue - totalInvestedCapital) / totalInvestedCapital) * 100;
   const strategyGainPct = ((finalStrategyValue - totalInvestedCapital) / totalInvestedCapital) * 100;
   const divBoostPct = strategyGainPct - priceGainPct;
 
@@ -320,7 +400,7 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
   const lastTime = pricePoints[pricePoints.length - 1].timestamp;
   const elapsedYears = Math.max((lastTime - firstTime) / (365.25 * 86400), 0.083);
 
-  const cagrPrice = (Math.pow(finalPriceValue / initialPrincipal, 1 / elapsedYears) - 1) * 100;
+  const cagrPrice = (Math.pow(finalPriceValue / totalInvestedCapital, 1 / elapsedYears) - 1) * 100;
   const cagrStrategy = (Math.pow(finalStrategyValue / totalInvestedCapital, 1 / elapsedYears) - 1) * 100;
 
   return {
@@ -359,11 +439,16 @@ async function calculateAndRender() {
   const horizon = activeHorizonBtn ? activeHorizonBtn.dataset.horizon : "3Y";
   const initialPrincipal = parseFloat(document.getElementById("initial-investment").value) || 10000;
   
+  const sharesInput = document.getElementById("custom-shares-input");
+  const customSharesCount = sharesInput && sharesInput.value ? parseFloat(sharesInput.value) : null;
+
   const strategySelect = document.getElementById("strategy-select");
   const strategyMode = strategySelect ? strategySelect.value : "drip";
 
+  const customDateStr = getSelectedDropdownDate();
+
   try {
-    currentData = await computeAccurateReturn(symbol, horizon, initialPrincipal, strategyMode);
+    currentData = await computeAccurateReturn(symbol, horizon, initialPrincipal, strategyMode, customDateStr, customSharesCount);
     renderHeaderAndKPIs(currentData);
     renderComparisonChart(currentData);
     renderTable(currentData);
@@ -570,7 +655,7 @@ async function renderWatchlist() {
   for (let index = 0; index < watchlist.length; index++) {
     const item = watchlist[index];
     try {
-      const res = await computeAccurateReturn(item.ticker, "CUSTOM", item.amount, item.strategy || "drip", item.date);
+      const res = await computeAccurateReturn(item.ticker, "CUSTOM", item.amount, item.strategy || "drip", item.date, item.shares);
       
       const card = document.createElement("div");
       card.className = "watchlist-card-item";
@@ -586,9 +671,9 @@ async function renderWatchlist() {
         </div>
         <div class="watchlist-details">
           <div>Invested: <span>${formatCurrency(item.amount)}</span></div>
+          <div>Shares: <span>${res.initialShares.toFixed(3)}</span></div>
           <div>Bought: <span>${item.date}</span></div>
           <div>Current Value: <span class="text-green">${formatCurrency(res.finalDripValue)}</span></div>
-          <div>Return Boost: <span class="text-gold">${formatCurrency(res.finalDripValue - res.finalPriceValue)}</span></div>
         </div>
         <div class="watchlist-return-row">
           <span class="subtitle">Accurate ROR</span>
@@ -600,8 +685,11 @@ async function renderWatchlist() {
         if (e.target.closest(".watchlist-remove-btn")) return;
         document.getElementById("ticker-input").value = item.ticker;
         document.getElementById("initial-investment").value = item.amount;
-        document.getElementById("investment-date").value = item.date;
+        setSelectedDropdownDate(item.date);
         
+        const sharesInput = document.getElementById("custom-shares-input");
+        if (sharesInput) sharesInput.value = item.shares || "";
+
         const strategySelect = document.getElementById("strategy-select");
         if (strategySelect) strategySelect.value = item.strategy || "drip";
 
@@ -623,16 +711,20 @@ async function renderWatchlist() {
 function addToWatchlist() {
   const symbol = document.getElementById("ticker-input").value.toUpperCase().trim() || "SPY";
   const amount = parseFloat(document.getElementById("initial-investment").value) || 10000;
-  const date = document.getElementById("investment-date").value || "2021-08-01";
+  const date = getSelectedDropdownDate();
+  
+  const sharesInput = document.getElementById("custom-shares-input");
+  const shares = sharesInput && sharesInput.value ? parseFloat(sharesInput.value) : null;
+
   const strategySelect = document.getElementById("strategy-select");
   const strategy = strategySelect ? strategySelect.value : "drip";
 
   // De-duplicate: replace existing if ticker and date match
   const existingIdx = watchlist.findIndex(w => w.ticker === symbol && w.date === date);
   if (existingIdx >= 0) {
-    watchlist[existingIdx] = { ticker: symbol, amount, date, strategy };
+    watchlist[existingIdx] = { ticker: symbol, amount, date, strategy, shares };
   } else {
-    watchlist.unshift({ ticker: symbol, amount, date, strategy });
+    watchlist.unshift({ ticker: symbol, amount, date, strategy, shares });
   }
 
   localStorage.setItem("accurate_ror_watchlist", JSON.stringify(watchlist));

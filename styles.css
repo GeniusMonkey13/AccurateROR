@@ -326,9 +326,31 @@ body {
   outline: none;
 }
 
-.custom-select option {
-  background: #121826;
+.dropdown-date-group {
+  display: flex;
+  gap: 6px;
+}
+
+.date-select {
+  flex: 1;
+  padding: 10px 8px;
+  font-size: 0.85rem;
+}
+
+#custom-shares-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
   color: #ffffff;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  outline: none;
+}
+
+#custom-shares-input:focus {
+  border-color: var(--primary-accent);
 }
 
 .table-search-box input {
