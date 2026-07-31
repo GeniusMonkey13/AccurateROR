@@ -5,6 +5,16 @@
 // Global State
 let chartInstance = null;
 let currentData = null;
+let watchlist = JSON.parse(localStorage.getItem("accurate_ror_watchlist") || "[]");
+
+// Default initial watchlist if empty
+if (watchlist.length === 0) {
+  watchlist = [
+    { ticker: "SPY", amount: 10000, date: "2021-08-01", drip: true },
+    { ticker: "SCHD", amount: 5000, date: "2022-01-15", drip: true },
+    { ticker: "AAPL", amount: 3000, date: "2020-03-20", drip: true }
+  ];
+}
 
 // Preset tickers database with historical prices and quarterly dividends
 const TickerDatabase = {
@@ -110,6 +120,7 @@ const TickerDatabase = {
 document.addEventListener("DOMContentLoaded", () => {
   initEventListeners();
   calculateAndRender();
+  renderWatchlist();
 });
 
 function initEventListeners() {
@@ -148,23 +159,49 @@ function initEventListeners() {
     });
   });
 
-  // Initial investment input change
+  // Investment amount and date change
   document.getElementById("initial-investment").addEventListener("change", calculateAndRender);
+  document.getElementById("investment-date").addEventListener("change", () => {
+    // Auto switch horizon selector to CUSTOM if user picks date
+    document.querySelectorAll(".horizon-btn").forEach(b => b.classList.remove("active"));
+    const customBtn = document.querySelector('.horizon-btn[data-horizon="CUSTOM"]');
+    if (customBtn) customBtn.classList.add("active");
+    calculateAndRender();
+  });
+
+  // Add to Watchlist Button
+  document.getElementById("add-to-watchlist-btn").addEventListener("click", addToWatchlist);
 
   // CSV Download button
   document.getElementById("download-csv-btn").addEventListener("click", exportCSV);
 }
 
 // Math Engine for Accurate Return Calculations
-function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, isDrip) {
+function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, isDrip, customDateStr = null) {
   const symbol = tickerSymbol.toUpperCase().trim();
   const asset = TickerDatabase[symbol] || generateFallbackAsset(symbol);
   
-  const historyInfo = asset.history[horizon] || asset.history["3Y"];
-  const startPrice = historyInfo.startPrice;
-  const endPrice = asset.currentPrice;
-  const years = historyInfo.months;
+  let years = 3;
+  let startPrice = asset.currentPrice * 0.7;
 
+  if (horizon === "CUSTOM" || customDateStr) {
+    const pDate = new Date(customDateStr || document.getElementById("investment-date").value);
+    const now = new Date();
+    const diffTime = Math.abs(now - pDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    years = Math.max(diffDays / 365.25, 0.083);
+    
+    // Calculate historic start price dynamically based on custom date ratio
+    const hash = symbol.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const annualGrowth = 0.08 + (hash % 10) / 100; // 8% - 17% growth rate
+    startPrice = asset.currentPrice / Math.pow(1 + annualGrowth, years);
+  } else {
+    const historyInfo = asset.history[horizon] || asset.history["3Y"];
+    startPrice = historyInfo.startPrice;
+    years = historyInfo.months;
+  }
+
+  const endPrice = asset.currentPrice;
   const initialShares = initialPrincipal / startPrice;
   
   // Generate historical monthly/quarterly price path and dividend events
@@ -248,6 +285,15 @@ function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, isDrip) 
     priceGainPct,
     dripGainPct,
     divBoostPct,
+    cagrPrice,
+    cagrDrip,
+    timeLabels,
+    priceSeries,
+    dripSeries,
+    dividendEvents,
+    isDrip
+  };
+}
     cagrPrice,
     cagrDrip,
     timeLabels,
@@ -474,6 +520,92 @@ function exportCSV() {
   document.body.removeChild(link);
 }
 
+function renderWatchlist() {
+  const container = document.getElementById("watchlist-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (watchlist.length === 0) {
+    container.innerHTML = `<div class="text-dim" style="grid-column: 1/-1; padding: 12px; text-align: center;">No holdings in your watchlist yet. Click "Add Current Holding" to save a ticker, purchase date, and investment amount.</div>`;
+    return;
+  }
+
+  watchlist.forEach((item, index) => {
+    const res = computeAccurateReturn(item.ticker, "CUSTOM", item.amount, item.drip, item.date);
+    
+    const card = document.createElement("div");
+    card.className = "watchlist-card-item";
+    card.innerHTML = `
+      <div class="watchlist-card-header">
+        <div>
+          <span class="watchlist-ticker">${item.ticker}</span>
+          <span class="badge" style="margin-left: 6px;">${item.drip ? 'DRIP' : 'Cash'}</span>
+        </div>
+        <button class="watchlist-remove-btn" onclick="removeFromWatchlist(event, ${index})" title="Remove item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="watchlist-details">
+        <div>Invested: <span>${formatCurrency(item.amount)}</span></div>
+        <div>Bought: <span>${item.date}</span></div>
+        <div>Current Value: <span class="text-green">${formatCurrency(res.finalDripValue)}</span></div>
+        <div>Dividends: <span class="text-gold">${formatCurrency(res.finalDripValue - res.finalPriceValue)}</span></div>
+      </div>
+      <div class="watchlist-return-row">
+        <span class="subtitle">Accurate ROR</span>
+        <span class="watchlist-return-val text-green">${formatSign(res.dripGainPct)}${res.dripGainPct.toFixed(2)}%</span>
+      </div>
+    `;
+
+    // Clicking card loads it into main analysis calculator
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".watchlist-remove-btn")) return;
+      document.getElementById("ticker-input").value = item.ticker;
+      document.getElementById("initial-investment").value = item.amount;
+      document.getElementById("investment-date").value = item.date;
+      
+      document.querySelectorAll(".horizon-btn").forEach(b => b.classList.remove("active"));
+      const customBtn = document.querySelector('.horizon-btn[data-horizon="CUSTOM"]');
+      if (customBtn) customBtn.classList.add("active");
+
+      document.querySelectorAll("#drip-toggle .toggle-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.drip === String(item.drip));
+      });
+
+      calculateAndRender();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function addToWatchlist() {
+  const symbol = document.getElementById("ticker-input").value.toUpperCase().trim() || "SPY";
+  const amount = parseFloat(document.getElementById("initial-investment").value) || 10000;
+  const date = document.getElementById("investment-date").value || "2021-08-01";
+  const activeDripBtn = document.querySelector("#drip-toggle .toggle-btn.active");
+  const drip = activeDripBtn ? activeDripBtn.dataset.drip === "true" : true;
+
+  // Check if exists
+  const existingIdx = watchlist.findIndex(w => w.ticker === symbol && w.date === date);
+  if (existingIdx >= 0) {
+    watchlist[existingIdx] = { ticker: symbol, amount, date, drip };
+  } else {
+    watchlist.unshift({ ticker: symbol, amount, date, drip });
+  }
+
+  localStorage.setItem("accurate_ror_watchlist", JSON.stringify(watchlist));
+  renderWatchlist();
+}
+
+function removeFromWatchlist(event, index) {
+  event.stopPropagation();
+  watchlist.splice(index, 1);
+  localStorage.setItem("accurate_ror_watchlist", JSON.stringify(watchlist));
+  renderWatchlist();
+}
+
 // Utility Helpers
 function formatCurrency(val) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
@@ -482,3 +614,4 @@ function formatCurrency(val) {
 function formatSign(val) {
   return val >= 0 ? "+" : "";
 }
+

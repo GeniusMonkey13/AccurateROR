@@ -58,7 +58,7 @@
         <!-- Time Horizon & Investment Settings -->
         <div class="controls-grid">
           <div class="control-item">
-            <label>Timeframe Horizon</label>
+            <label>Mode / Date Horizon</label>
             <div class="horizon-selector" id="horizon-selector">
               <button class="horizon-btn" data-horizon="1M">1M</button>
               <button class="horizon-btn" data-horizon="6M">6M</button>
@@ -66,12 +66,17 @@
               <button class="horizon-btn" data-horizon="1Y">1Y</button>
               <button class="horizon-btn active" data-horizon="3Y">3Y</button>
               <button class="horizon-btn" data-horizon="5Y">5Y</button>
-              <button class="horizon-btn" data-horizon="MAX">MAX</button>
+              <button class="horizon-btn" data-horizon="CUSTOM">Custom Date</button>
             </div>
           </div>
 
           <div class="control-item">
-            <label for="initial-investment">Initial Principal ($)</label>
+            <label for="investment-date">Investment Purchase Date</label>
+            <input type="date" id="investment-date" value="2021-08-01">
+          </div>
+
+          <div class="control-item">
+            <label for="initial-investment">Invested Principal ($)</label>
             <input type="number" id="initial-investment" value="10000" min="100" step="500">
           </div>
 
@@ -80,7 +85,7 @@
             <div class="toggle-group" id="drip-toggle">
               <button class="toggle-btn active" data-drip="true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                DRIP (Reinvest Dividends)
+                DRIP Reinvest
               </button>
               <button class="toggle-btn" data-drip="false">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
@@ -88,6 +93,23 @@
               </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- Custom Watchlist Section -->
+      <section class="card watchlist-card">
+        <div class="card-header">
+          <div>
+            <h3>Your Custom Portfolio Watchlist</h3>
+            <p class="subtitle">Add stocks/funds with custom purchase dates & amounts to compute accurate total returns</p>
+          </div>
+          <button id="add-to-watchlist-btn" class="btn btn-secondary btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add Current Holding
+          </button>
+        </div>
+        <div id="watchlist-container" class="watchlist-grid">
+          <!-- Dynamically populated watchlist items -->
         </div>
       </section>
 

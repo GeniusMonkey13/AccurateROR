@@ -314,7 +314,7 @@ body {
   color: #051a12;
 }
 
-#initial-investment {
+#initial-investment, #investment-date {
   width: 100%;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--border-color);
@@ -323,6 +323,92 @@ body {
   color: #ffffff;
   font-family: var(--font-mono);
   font-weight: 600;
+}
+
+#investment-date::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+/* Watchlist Grid */
+.watchlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.watchlist-card-item {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  position: relative;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.watchlist-card-item:hover {
+  border-color: var(--primary-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 230, 153, 0.15);
+}
+
+.watchlist-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.watchlist-ticker {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.watchlist-remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px;
+  transition: color 0.2s ease;
+}
+
+.watchlist-remove-btn:hover {
+  color: var(--red-accent);
+}
+
+.watchlist-details {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.watchlist-details div span {
+  display: block;
+  font-family: var(--font-mono);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.watchlist-return-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.watchlist-return-val {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 800;
 }
 
 .toggle-group {
