@@ -198,7 +198,15 @@ function getDatabaseFallbackData(symbol, horizon, customDateStr) {
     years = yearsMap[horizon] || 3;
   }
 
-  const startPrice = dbAsset.historicalPrices?.[horizon] || (dbAsset.currentPrice * 0.7);
+  let startPrice = dbAsset.historicalPrices?.[horizon];
+  if (!startPrice) {
+    if (years <= 0.1) startPrice = dbAsset.historicalPrices?.["1M"] || dbAsset.currentPrice * 0.98;
+    else if (years <= 0.5) startPrice = dbAsset.historicalPrices?.["6M"] || dbAsset.currentPrice * 0.90;
+    else if (years <= 1) startPrice = dbAsset.historicalPrices?.["1Y"] || dbAsset.currentPrice * 0.83;
+    else if (years <= 3) startPrice = dbAsset.historicalPrices?.["3Y"] || dbAsset.currentPrice * 0.75;
+    else if (years <= 5) startPrice = dbAsset.historicalPrices?.["5Y"] || dbAsset.currentPrice * 0.60;
+    else startPrice = dbAsset.historicalPrices?.["MAX"] || dbAsset.currentPrice * 0.25;
+  }
   const endPrice = dbAsset.currentPrice;
   const intervals = Math.max(Math.round(years * 26), 12);
   const pricePoints = [];
@@ -626,7 +634,7 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
 
 // Render Functions
 async function calculateAndRender() {
-  const symbol = document.getElementById("ticker-input").value;
+  const symbol = document.getElementById("ticker-input").value.toUpperCase().trim() || "SPY";
   const activeHorizonBtn = document.querySelector(".horizon-btn.active");
   const horizon = activeHorizonBtn ? activeHorizonBtn.dataset.horizon : "3Y";
   const initialPrincipal = parseFloat(document.getElementById("initial-investment").value) || 10000;
@@ -637,7 +645,7 @@ async function calculateAndRender() {
   const strategySelect = document.getElementById("strategy-select");
   const strategyMode = strategySelect ? strategySelect.value : "drip";
 
-  const customDateStr = getSelectedDropdownDate();
+  const customDateStr = (horizon === "CUSTOM" || horizon === "MAX") ? getSelectedDropdownDate() : null;
 
   try {
     currentData = await computeAccurateReturn(symbol, horizon, initialPrincipal, strategyMode, customDateStr, customSharesCount);
