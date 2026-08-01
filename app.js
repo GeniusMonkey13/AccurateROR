@@ -269,10 +269,10 @@ function initEventListeners() {
     strategySelect.addEventListener("change", calculateAndRender);
   }
 
-  // Daily price search filter
-  const searchInput = document.getElementById("daily-table-search");
-  if (searchInput) {
-    searchInput.addEventListener("input", filterDailyPriceTable);
+  // Calendar date filter for daily price table
+  const calendarFilter = document.getElementById("calendar-filter-input");
+  if (calendarFilter) {
+    calendarFilter.addEventListener("change", filterDailyPriceTableByCalendar);
   }
 
   // Add to Watchlist Button
@@ -614,14 +614,42 @@ function renderDailyPriceTable(records) {
   });
 }
 
-function filterDailyPriceTable() {
-  const query = document.getElementById("daily-table-search").value.toLowerCase();
+function filterDailyPriceTableByCalendar() {
+  const filterInput = document.getElementById("calendar-filter-input");
+  if (!filterInput || !filterInput.value) {
+    document.querySelectorAll("#daily-price-tbody tr").forEach(r => r.style.display = "");
+    return;
+  }
+
+  const selectedDate = new Date(filterInput.value + "T00:00:00");
+  const formattedFilterDate = selectedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
+  const yearFilter = selectedDate.getFullYear().toString().slice(-2);
+
   const rows = document.querySelectorAll("#daily-price-tbody tr");
+  let found = false;
 
   rows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(query) ? "" : "none";
+    const rowDateText = row.querySelector("td") ? row.querySelector("td").textContent.trim() : "";
+    if (rowDateText === formattedFilterDate || rowDateText.includes(formattedFilterDate)) {
+      row.style.display = "";
+      row.style.backgroundColor = "rgba(0, 230, 153, 0.2)";
+      found = true;
+    } else {
+      row.style.display = "none";
+      row.style.backgroundColor = "";
+    }
   });
+
+  // Fallback: show rows matching the year if exact day isn't in weekly series
+  if (!found) {
+    rows.forEach(row => {
+      const rowDateText = row.querySelector("td") ? row.querySelector("td").textContent.trim() : "";
+      if (rowDateText.endsWith(yearFilter)) {
+        row.style.display = "";
+        row.style.backgroundColor = "";
+      }
+    });
+  }
 }
 
 function exportCSV() {

@@ -272,15 +272,16 @@
         </div>
       </section>
 
-      <!-- Daily / Key Dates Inspection Log & Search Bar -->
+      <!-- Daily / Key Dates Inspection Log & Calendar Filter -->
       <section class="card daily-log-card">
         <div class="card-header">
           <div>
             <h3>Daily & Historical Date Stock Inspector</h3>
-            <p class="subtitle">Search or filter any specific day to see exact historical stock prices, accumulated dividends, and total return value</p>
+            <p class="subtitle">Select any calendar date to inspect exact historical stock prices, accumulated dividends, and total return value</p>
           </div>
           <div class="table-search-box">
-            <input type="text" id="daily-table-search" placeholder="Search date (e.g. 2023, Jan, 08/15)...">
+            <label for="calendar-filter-input" style="font-size:0.8rem; color:var(--text-muted); margin-right:8px; font-weight:600;">Calendar Filter:</label>
+            <input type="date" id="calendar-filter-input" title="Filter by date">
           </div>
         </div>
         <div class="table-responsive max-h-table">
