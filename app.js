@@ -162,6 +162,8 @@ const RealMarketDatabase = {
       "MAX": 50.00
     }
   }
+};
+
 // Live Data Cache
 const LiveDataCache = {};
 
@@ -579,8 +581,12 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
     const priceGainPctOnDay = ((pt.price - startPrice) / startPrice) * 100;
     const strategyReturnPctOnDay = ((strategyVal - totalInvestedCapital) / totalInvestedCapital) * 100;
 
+    const isoDateStr = new Date(pt.timestamp * 1000).toISOString().split('T')[0];
+
     dailyRecords.push({
       date: pt.dateLabel,
+      timestamp: pt.timestamp,
+      isoDate: isoDateStr,
       price: pt.price,
       priceReturnPct: priceGainPctOnDay,
       strategyVal: strategyVal,
@@ -800,8 +806,15 @@ function renderDailyPriceTable(records) {
   if (!tbody) return;
   tbody.innerHTML = "";
 
+  if (!records || records.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-dim);">No historical data points available.</td></tr>`;
+    return;
+  }
+
   records.forEach(rec => {
     const tr = document.createElement("tr");
+    tr.dataset.isoDate = rec.isoDate || "";
+    tr.dataset.timestamp = rec.timestamp || 0;
     tr.innerHTML = `
       <td><strong>${rec.date}</strong></td>
       <td>${formatCurrency(rec.price)}</td>
@@ -816,39 +829,50 @@ function renderDailyPriceTable(records) {
 
 function filterDailyPriceTableByCalendar() {
   const filterInput = document.getElementById("calendar-filter-input");
+  const rows = document.querySelectorAll("#daily-price-tbody tr");
+
+  if (!rows || rows.length === 0) return;
+
   if (!filterInput || !filterInput.value) {
-    document.querySelectorAll("#daily-price-tbody tr").forEach(r => r.style.display = "");
+    rows.forEach(r => {
+      r.style.display = "";
+      r.style.backgroundColor = "";
+    });
     return;
   }
 
-  const selectedDate = new Date(filterInput.value + "T00:00:00");
-  const formattedFilterDate = selectedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
-  const yearFilter = selectedDate.getFullYear().toString().slice(-2);
+  const selectedIso = filterInput.value; // "YYYY-MM-DD"
+  const selectedTs = Math.floor(new Date(selectedIso + "T00:00:00").getTime() / 1000);
 
-  const rows = document.querySelectorAll("#daily-price-tbody tr");
-  let found = false;
+  let exactMatchFound = false;
+  let closestRow = null;
+  let minDiff = Infinity;
 
   rows.forEach(row => {
-    const rowDateText = row.querySelector("td") ? row.querySelector("td").textContent.trim() : "";
-    if (rowDateText === formattedFilterDate || rowDateText.includes(formattedFilterDate)) {
+    const rowIso = row.dataset.isoDate;
+    const rowTs = parseInt(row.dataset.timestamp) || 0;
+
+    if (rowIso === selectedIso) {
+      exactMatchFound = true;
       row.style.display = "";
-      row.style.backgroundColor = "rgba(0, 230, 153, 0.2)";
-      found = true;
+      row.style.backgroundColor = "rgba(0, 230, 153, 0.25)";
     } else {
       row.style.display = "none";
       row.style.backgroundColor = "";
+
+      if (rowTs > 0) {
+        const diff = Math.abs(rowTs - selectedTs);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestRow = row;
+        }
+      }
     }
   });
 
-  // Fallback: show rows matching the year if exact day isn't in weekly series
-  if (!found) {
-    rows.forEach(row => {
-      const rowDateText = row.querySelector("td") ? row.querySelector("td").textContent.trim() : "";
-      if (rowDateText.endsWith(yearFilter)) {
-        row.style.display = "";
-        row.style.backgroundColor = "";
-      }
-    });
+  if (!exactMatchFound && closestRow) {
+    closestRow.style.display = "";
+    closestRow.style.backgroundColor = "rgba(0, 230, 153, 0.25)";
   }
 }
 

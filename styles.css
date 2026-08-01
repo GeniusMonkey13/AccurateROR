@@ -294,18 +294,22 @@ body {
   padding: 4px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  gap: 2px;
+  flex-wrap: wrap;
 }
 
 .horizon-btn {
   flex: 1;
+  min-width: 38px;
   background: transparent;
   border: none;
   color: var(--text-muted);
-  padding: 8px 0;
-  font-size: 0.82rem;
+  padding: 6px 8px;
+  font-size: 0.78rem;
   font-weight: 700;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
@@ -314,27 +318,34 @@ body {
   color: #051a12;
 }
 
-#initial-investment, #investment-date, .custom-select {
+#initial-investment, #investment-date, .custom-select, .date-select {
   width: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background-color: #121826 !important;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 10px 14px;
-  color: #ffffff;
+  padding: 10px 12px;
+  color: #ffffff !important;
   font-family: var(--font-mono);
   font-weight: 600;
   outline: none;
 }
 
+select option, .custom-select option, .date-select option {
+  background-color: #121826 !important;
+  color: #ffffff !important;
+}
+
 .dropdown-date-group {
   display: flex;
   gap: 6px;
+  width: 100%;
 }
 
 .date-select {
   flex: 1;
-  padding: 10px 8px;
-  font-size: 0.85rem;
+  min-width: 65px;
+  padding: 10px 6px;
+  font-size: 0.82rem;
 }
 
 #custom-shares-input {
