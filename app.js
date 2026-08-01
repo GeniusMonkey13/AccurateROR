@@ -638,6 +638,51 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
   };
 }
 
+// Loading Indicator Helpers
+function showLoading(msg = "Fetching & Calculating True Returns...") {
+  const progressBar = document.getElementById("loading-bar-progress");
+  const overlay = document.getElementById("chart-loading-overlay");
+  const loadingText = document.getElementById("loading-text");
+  const btn = document.getElementById("search-btn");
+
+  if (progressBar) {
+    progressBar.style.width = "35%";
+    progressBar.style.opacity = "1";
+  }
+  if (overlay) overlay.classList.add("active");
+  if (loadingText) loadingText.textContent = msg;
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+  }
+}
+
+function updateLoadingProgress(pct, msg) {
+  const progressBar = document.getElementById("loading-bar-progress");
+  const loadingText = document.getElementById("loading-text");
+  if (progressBar) progressBar.style.width = `${pct}%`;
+  if (loadingText && msg) loadingText.textContent = msg;
+}
+
+function hideLoading() {
+  const progressBar = document.getElementById("loading-bar-progress");
+  const overlay = document.getElementById("chart-loading-overlay");
+  const btn = document.getElementById("search-btn");
+
+  if (progressBar) {
+    progressBar.style.width = "100%";
+    setTimeout(() => {
+      progressBar.style.opacity = "0";
+      progressBar.style.width = "0%";
+    }, 300);
+  }
+  if (overlay) overlay.classList.remove("active");
+  if (btn) {
+    btn.disabled = false;
+    btn.style.opacity = "1";
+  }
+}
+
 // Render Functions
 async function calculateAndRender() {
   const symbol = document.getElementById("ticker-input").value.toUpperCase().trim() || "SPY";
@@ -653,14 +698,23 @@ async function calculateAndRender() {
 
   const customDateStr = (horizon === "CUSTOM" || horizon === "MAX") ? getSelectedDropdownDate() : null;
 
+  showLoading(`Fetching real-time data for ${symbol}...`);
+
   try {
+    updateLoadingProgress(50, `Calculating DRIP & ${strategyMode.toUpperCase()} returns...`);
     currentData = await computeAccurateReturn(symbol, horizon, initialPrincipal, strategyMode, customDateStr, customSharesCount);
+    
+    updateLoadingProgress(80, "Rendering precision graph & inspection logs...");
     renderHeaderAndKPIs(currentData);
     renderComparisonChart(currentData);
     renderTable(currentData);
     renderDailyPriceTable(currentData.dailyRecords);
+    
+    updateLoadingProgress(100, "Done");
   } catch (err) {
     console.error("Error computing returns:", err);
+  } finally {
+    setTimeout(hideLoading, 250);
   }
 }
 

@@ -579,11 +579,79 @@ select option, .custom-select option, .date-select option {
 .text-gold { color: var(--gold-accent); }
 .text-red { color: var(--red-accent); }
 
-/* Chart Styling */
+/* Top Loading Progress Bar */
+.loading-bar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.loading-bar-progress {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00e699 0%, #3b82f6 50%, #fbbf24 100%);
+  box-shadow: 0 0 12px rgba(0, 230, 153, 0.8);
+  transition: width 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+/* Chart Styling & Loading Overlay */
 .chart-wrapper {
   position: relative;
   height: 380px;
   width: 100%;
+}
+
+.chart-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(9, 13, 22, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  border-radius: var(--radius-md);
+}
+
+.chart-loading-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(0, 230, 153, 0.2);
+  border-top-color: var(--primary-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#loading-text {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--primary-accent);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .chart-legend-custom {

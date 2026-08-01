@@ -17,6 +17,11 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Top Loading Progress Bar -->
+  <div id="loading-bar-container" class="loading-bar-container">
+    <div id="loading-bar-progress" class="loading-bar-progress"></div>
+  </div>
+
   <div class="app-container">
     <!-- Header Navbar -->
     <header class="app-header">
@@ -219,6 +224,10 @@
           </div>
         </div>
         <div class="chart-wrapper">
+          <div id="chart-loading-overlay" class="chart-loading-overlay">
+            <div class="spinner"></div>
+            <span id="loading-text">Fetching & Rendering Market Data...</span>
+          </div>
           <canvas id="returnChart"></canvas>
         </div>
       </section>
