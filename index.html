@@ -279,9 +279,14 @@
             <h3>Daily & Historical Date Stock Inspector</h3>
             <p class="subtitle">Select any calendar date to inspect exact historical stock prices, accumulated dividends, and total return value</p>
           </div>
-          <div class="table-search-box">
-            <label for="calendar-filter-input" style="font-size:0.8rem; color:var(--text-muted); margin-right:8px; font-weight:600;">Calendar Filter:</label>
+          <div class="table-search-box" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <label for="calendar-filter-input" style="font-size:0.82rem; color:var(--text-muted); font-weight:600;">Inspect Date:</label>
             <input type="date" id="calendar-filter-input" title="Filter by date">
+            <button id="apply-calendar-filter-btn" class="btn btn-secondary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              Filter Date
+            </button>
+            <button id="reset-calendar-filter-btn" class="btn btn-secondary btn-sm" style="padding:6px 10px; font-size:0.75rem;">Reset</button>
           </div>
         </div>
         <div class="table-responsive max-h-table">
