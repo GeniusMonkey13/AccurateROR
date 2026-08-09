@@ -611,7 +611,25 @@ select option, .custom-select option, .date-select option {
   color: #ffffff;
 }
 
-.filter-pill.active, .horizon-pill.active {
+.filter-pill, .horizon-pill, .drip-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 5px 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-pill:hover, .horizon-pill:hover, .drip-pill:hover {
+  border-color: var(--primary-accent);
+  color: #ffffff;
+}
+
+.filter-pill.active, .horizon-pill.active, .drip-pill.active {
   background: var(--primary-accent);
   border-color: var(--primary-accent);
   color: #0d131f;

@@ -594,6 +594,16 @@ function initEventListeners() {
     });
   });
 
+  // DRIP Dividend Strategy Pills
+  document.querySelectorAll(".drip-pill").forEach(pill => {
+    pill.addEventListener("click", (e) => {
+      document.querySelectorAll(".drip-pill").forEach(p => p.classList.remove("active"));
+      e.target.classList.add("active");
+      isMatrixDripEnabled = (e.target.dataset.drip === "ON");
+      renderComparisonMatrix();
+    });
+  });
+
   // Multi-Lot Modal Event Listeners
   const closeLotsBtn = document.getElementById("close-lots-modal-btn");
   if (closeLotsBtn) closeLotsBtn.addEventListener("click", closeLotsModal);
@@ -638,6 +648,7 @@ let comparisonMatrixData = [
 let activeAssetFilter = "ALL";
 let activeLongHorizon = "5Y";
 let activeChartType = "BAR";
+let isMatrixDripEnabled = true;
 let matrixCustomStartDate = "";
 let matrixCustomEndDate = "";
 let multiAssetChartInstance = null;
@@ -824,7 +835,7 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
     totalShares += sharesBought;
   });
 
-  const divBoostFactor = 1 + (divYield / 100) * 2.2;
+  const divBoostFactor = isMatrixDripEnabled ? (1 + (divYield / 100) * 2.2) : 1.0;
   const currentValue = totalShares * endPrice * divBoostFactor;
   const totalProfit = currentValue - totalInvested;
   const totalProfitPct = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
