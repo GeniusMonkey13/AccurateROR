@@ -147,7 +147,64 @@
               <option value="cash">Cash Dividend Payout</option>
               <option value="dca">DCA (Dollar Cost Averaging - Monthly $250)</option>
               <option value="lump_half_dca">Lump Sum 50% + 50% DCA</option>
+              <option value="variable_daily">⚡ Custom Daily Cashflow (e.g., % Hot Dog Vendor Daily Income)</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Custom Variable Daily Contributions Panel (Hotdog Vendor / Variable Income Mode) -->
+        <div id="variable-daily-panel" class="variable-daily-panel hidden">
+          <div class="panel-header">
+            <div>
+              <h4 class="panel-title">⚡ Variable Daily Income / Cashflow Ledger</h4>
+              <p class="panel-subtitle">Import daily earnings or custom investment amounts per date (e.g. 10% daily hotdog vendor profit, gig earnings, tip income)</p>
+            </div>
+            <div class="panel-actions">
+              <button id="add-daily-entry-btn" class="btn btn-sm btn-secondary">+ Add Day</button>
+              <button id="import-csv-daily-btn" class="btn btn-sm btn-secondary">📥 Import CSV / Paste Ledger</button>
+              <button id="clear-daily-schedule-btn" class="btn btn-sm btn-outline-danger">Clear All</button>
+            </div>
+          </div>
+
+          <div class="variable-daily-quick-calc">
+            <div class="quick-calc-inputs">
+              <label>Quick Generator (% of Daily Income):</label>
+              <input type="number" id="quick-income-pct" value="10" min="1" max="100" placeholder="%" style="width: 70px;">
+              <span>% of avg daily income $</span>
+              <input type="number" id="quick-avg-income" value="350" min="10" placeholder="Avg $ / day" style="width: 100px;">
+              <button id="generate-random-vendor-data-btn" class="btn btn-sm btn-primary">🎲 Simulate Hot Dog Vendor Daily Income</button>
+            </div>
+          </div>
+
+          <div class="daily-entries-wrapper">
+            <table class="daily-entries-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Daily Income / Hot Dog Sales ($)</th>
+                  <th>Investment %</th>
+                  <th>Invested Amount ($)</th>
+                  <th>Shares Purchased</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="daily-entries-tbody">
+                <!-- Dynamically populated or user added -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CSV Paste Modal Container inside panel -->
+          <div id="daily-csv-modal" class="daily-csv-modal hidden">
+            <div class="csv-modal-content">
+              <h5>Paste Daily Ledger Data (CSV or Date, Amount)</h5>
+              <p class="muted">Format: <code>YYYY-MM-DD, 35.50</code> or <code>Date, Income, Invested</code> (One entry per line)</p>
+              <textarea id="daily-csv-textarea" rows="6" placeholder="2024-01-02, 45.00&#10;2024-01-03, 28.50&#10;2024-01-04, 62.10"></textarea>
+              <div class="csv-modal-actions">
+                <button id="apply-csv-daily-btn" class="btn btn-sm btn-primary">Apply Ledger</button>
+                <button id="close-csv-modal-btn" class="btn btn-sm btn-secondary">Cancel</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

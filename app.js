@@ -455,8 +455,40 @@ function initEventListeners() {
   // Strategy select event
   const strategySelect = document.getElementById("strategy-select");
   if (strategySelect) {
-    strategySelect.addEventListener("change", calculateAndRender);
+    strategySelect.addEventListener("change", () => {
+      toggleVariableDailyPanel();
+      calculateAndRender();
+    });
   }
+
+  // Variable Daily Panel Event Listeners
+  const addDailyBtn = document.getElementById("add-daily-entry-btn");
+  if (addDailyBtn) addDailyBtn.addEventListener("click", () => addVariableDailyRow());
+
+  const genVendorBtn = document.getElementById("generate-random-vendor-data-btn");
+  if (genVendorBtn) genVendorBtn.addEventListener("click", simulateHotdogVendorSchedule);
+
+  const importCsvBtn = document.getElementById("import-csv-daily-btn");
+  if (importCsvBtn) importCsvBtn.addEventListener("click", () => {
+    const modal = document.getElementById("daily-csv-modal");
+    if (modal) modal.classList.remove("hidden");
+  });
+
+  const closeCsvBtn = document.getElementById("close-csv-modal-btn");
+  if (closeCsvBtn) closeCsvBtn.addEventListener("click", () => {
+    const modal = document.getElementById("daily-csv-modal");
+    if (modal) modal.classList.add("hidden");
+  });
+
+  const applyCsvBtn = document.getElementById("apply-csv-daily-btn");
+  if (applyCsvBtn) applyCsvBtn.addEventListener("click", applyCsvDailyLedger);
+
+  const clearDailyBtn = document.getElementById("clear-daily-schedule-btn");
+  if (clearDailyBtn) clearDailyBtn.addEventListener("click", () => {
+    const tbody = document.getElementById("daily-entries-tbody");
+    if (tbody) tbody.innerHTML = "";
+    calculateAndRender();
+  });
 
   // Calendar date filter for daily price table
   const calendarFilter = document.getElementById("calendar-filter-input");
@@ -486,6 +518,143 @@ function initEventListeners() {
   if (csvBtn) csvBtn.addEventListener("click", exportCSV);
 }
 
+function toggleVariableDailyPanel() {
+  const strategySelect = document.getElementById("strategy-select");
+  const panel = document.getElementById("variable-daily-panel");
+  if (!panel || !strategySelect) return;
+
+  if (strategySelect.value === "variable_daily") {
+    panel.classList.remove("hidden");
+    const tbody = document.getElementById("daily-entries-tbody");
+    if (tbody && tbody.children.length === 0) {
+      simulateHotdogVendorSchedule();
+    }
+  } else {
+    panel.classList.add("hidden");
+  }
+}
+
+function addVariableDailyRow(dateStr = "", incomeVal = 350, pctVal = 10, investedVal = 35) {
+  const tbody = document.getElementById("daily-entries-tbody");
+  if (!tbody) return;
+
+  if (!dateStr) {
+    const today = new Date().toISOString().split('T')[0];
+    dateStr = today;
+  }
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input type="date" class="daily-date-input" value="${dateStr}"></td>
+    <td><input type="number" class="daily-income-input" value="${incomeVal}" step="5"></td>
+    <td><input type="number" class="daily-pct-input" value="${pctVal}" min="1" max="100" style="width:60px;">%</td>
+    <td><input type="number" class="daily-invested-input" value="${investedVal}" step="1"></td>
+    <td class="daily-shares-bought" style="font-family:var(--font-mono); font-weight:600; color:var(--primary-accent);">0.000</td>
+    <td><button class="btn btn-sm btn-outline-danger remove-daily-row-btn">✕</button></td>
+  `;
+
+  tbody.appendChild(tr);
+
+  // Attach event listeners for dynamic recalculation
+  const inputs = tr.querySelectorAll("input");
+  inputs.forEach(inp => {
+    inp.addEventListener("input", (e) => {
+      if (e.target.classList.contains("daily-income-input") || e.target.classList.contains("daily-pct-input")) {
+        const inc = parseFloat(tr.querySelector(".daily-income-input").value) || 0;
+        const pct = parseFloat(tr.querySelector(".daily-pct-input").value) || 0;
+        const invInput = tr.querySelector(".daily-invested-input");
+        if (invInput) invInput.value = ((inc * pct) / 100).toFixed(2);
+      }
+      calculateAndRender();
+    });
+  });
+
+  tr.querySelector(".remove-daily-row-btn").addEventListener("click", () => {
+    tr.remove();
+    calculateAndRender();
+  });
+
+  calculateAndRender();
+}
+
+function simulateHotdogVendorSchedule() {
+  const tbody = document.getElementById("daily-entries-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  const pct = parseFloat(document.getElementById("quick-income-pct")?.value) || 10;
+  const avgIncome = parseFloat(document.getElementById("quick-avg-income")?.value) || 350;
+
+  // Generate 20 realistic hot dog vendor business days
+  const now = new Date();
+  for (let i = 25; i >= 1; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (i * 2)); // Spread across trading days
+    const iso = d.toISOString().split('T')[0];
+
+    // Hot dog vendor income varies day by day (weather, weekends, foot traffic)
+    const randomVariation = (Math.random() * 0.6 + 0.7); // 70% to 130%
+    const dailyIncome = Math.round(avgIncome * randomVariation);
+    const investedAmount = parseFloat(((dailyIncome * pct) / 100).toFixed(2));
+
+    addVariableDailyRow(iso, dailyIncome, pct, investedAmount);
+  }
+}
+
+function applyCsvDailyLedger() {
+  const textarea = document.getElementById("daily-csv-textarea");
+  const modal = document.getElementById("daily-csv-modal");
+  if (!textarea || !textarea.value.trim()) return;
+
+  const lines = textarea.value.trim().split("\n");
+  const tbody = document.getElementById("daily-entries-tbody");
+  if (tbody) tbody.innerHTML = "";
+
+  const pct = parseFloat(document.getElementById("quick-income-pct")?.value) || 10;
+
+  lines.forEach(line => {
+    const parts = line.split(",").map(p => p.trim());
+    if (parts.length >= 2) {
+      const dateStr = parts[0];
+      const val1 = parseFloat(parts[1]) || 0;
+      const val2 = parts[2] ? parseFloat(parts[2]) : ((val1 * pct) / 100);
+
+      if (dateStr && !isNaN(val1)) {
+        addVariableDailyRow(dateStr, val1, pct, parseFloat(val2.toFixed(2)));
+      }
+    }
+  });
+
+  if (modal) modal.classList.add("hidden");
+  calculateAndRender();
+}
+
+function getVariableDailySchedule() {
+  const rows = document.querySelectorAll("#daily-entries-tbody tr");
+  const schedule = [];
+
+  rows.forEach(tr => {
+    const dateVal = tr.querySelector(".daily-date-input")?.value;
+    const incomeVal = parseFloat(tr.querySelector(".daily-income-input")?.value) || 0;
+    const pctVal = parseFloat(tr.querySelector(".daily-pct-input")?.value) || 0;
+    const investedVal = parseFloat(tr.querySelector(".daily-invested-input")?.value) || 0;
+
+    if (dateVal && investedVal > 0) {
+      schedule.push({
+        date: dateVal,
+        timestamp: Math.floor(new Date(dateVal + "T00:00:00").getTime() / 1000),
+        income: incomeVal,
+        pct: pctVal,
+        invested: investedVal,
+        trRef: tr
+      });
+    }
+  });
+
+  schedule.sort((a, b) => a.timestamp - b.timestamp);
+  return schedule;
+}
+
 // Async Math Engine consuming real price time-series and investment strategies
 async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, strategyMode = "drip", customDateStr = null, customSharesCount = null) {
   const selectedDate = customDateStr || getSelectedDropdownDate();
@@ -500,7 +669,6 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
   const startPrice = pricePoints[0].price;
   const endPrice = realMarketData.currentPrice || pricePoints[pricePoints.length - 1].price;
 
-  // Custom shares count or calculated initial shares
   let initialShares = customSharesCount && !isNaN(customSharesCount) && customSharesCount > 0
     ? parseFloat(customSharesCount)
     : initialPrincipal / startPrice;
@@ -514,6 +682,12 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
     initialShares = totalInvestedCapital / startPrice;
   }
 
+  // Variable Daily Mode: initial principal starts with custom schedule base or initial input
+  const variableDailySchedule = strategyMode === "variable_daily" ? getVariableDailySchedule() : [];
+  if (strategyMode === "variable_daily") {
+    totalInvestedCapital = initialPrincipal; // Base capital
+  }
+
   let currentShares = initialShares;
   let accumulatedCashDivs = 0;
 
@@ -524,6 +698,7 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
   const dailyRecords = [];
 
   let divIdx = 0;
+  let scheduleIdx = 0;
   const dcaMonthlyContribution = 250;
 
   for (let i = 0; i < pricePoints.length; i++) {
@@ -536,6 +711,22 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
         totalInvestedCapital += dcaMonthlyContribution;
         const newDcaShares = dcaMonthlyContribution / pt.price;
         currentShares += newDcaShares;
+      }
+    }
+
+    // Apply Custom Variable Daily Cashflow / Income Contributions
+    if (strategyMode === "variable_daily") {
+      while (scheduleIdx < variableDailySchedule.length && variableDailySchedule[scheduleIdx].timestamp <= pt.timestamp) {
+        const item = variableDailySchedule[scheduleIdx];
+        totalInvestedCapital += item.invested;
+        const sharesBought = item.invested / pt.price;
+        currentShares += sharesBought;
+
+        if (item.trRef) {
+          const sharesCell = item.trRef.querySelector(".daily-shares-bought");
+          if (sharesCell) sharesCell.textContent = `+${sharesBought.toFixed(4)}`;
+        }
+        scheduleIdx++;
       }
     }
 
