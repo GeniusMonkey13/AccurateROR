@@ -633,25 +633,23 @@ function getFundCategoryName(ticker) {
 
 function addComparisonRow(rawTicker = "") {
   const inputEl = document.getElementById("add-asset-ticker-input");
-  let ticker = (rawTicker || (inputEl ? inputEl.value : "") || "VTI").toUpperCase().trim();
-  if (!ticker) ticker = "VTI";
+  let ticker = (rawTicker || (inputEl ? inputEl.value : "")).toUpperCase().trim();
 
-  // Auto reset active filter if it would hide newly added asset
-  const newType = getAssetType(ticker);
-  if ((activeAssetFilter === "MUTUAL" && newType !== "MUTUAL") || (activeAssetFilter === "ETF" && newType === "MUTUAL")) {
-    activeAssetFilter = "ALL";
-    document.querySelectorAll(".filter-pill").forEach(p => {
-      p.classList.toggle("active", p.dataset.assetFilter === "ALL");
-    });
-  }
+  // Reset filter to "ALL" so newly added asset is always visible
+  activeAssetFilter = "ALL";
+  document.querySelectorAll(".filter-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.assetFilter === "ALL");
+  });
+
+  const newId = `asset_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
   comparisonMatrixData.push({
-    id: `asset_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    id: newId,
     ticker: ticker
   });
 
   if (inputEl) inputEl.value = "";
-  renderComparisonMatrix();
+  renderComparisonMatrix(newId);
 }
 
 function loadETradePreset() {
@@ -687,6 +685,8 @@ function removeComparisonRow(id) {
 }
 
 async function safeComputeReturn(ticker, horizon) {
+  if (!ticker) return null;
+
   try {
     const res = await computeAccurateReturn(ticker, horizon, 10000, "drip");
     if (res && res.dailyRecords && res.dailyRecords.length > 0) {
@@ -716,13 +716,14 @@ async function safeComputeReturn(ticker, horizon) {
   };
 }
 
-async function renderComparisonMatrix() {
+async function renderComparisonMatrix(focusId = null) {
   const tbody = document.getElementById("comparison-matrix-tbody");
   if (!tbody) return;
 
   tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:24px; color:var(--text-dim);">Fetching & computing accurate multi-period returns across Mutual Funds & ETFs...</td></tr>`;
 
   const filteredItems = comparisonMatrixData.filter(item => {
+    if (!item.ticker) return true; // always show new blank rows
     const type = getAssetType(item.ticker);
     if (activeAssetFilter === "MUTUAL") return type === "MUTUAL";
     if (activeAssetFilter === "ETF") return type !== "MUTUAL";
@@ -730,7 +731,7 @@ async function renderComparisonMatrix() {
   });
 
   if (filteredItems.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:20px; color:var(--text-dim);">No matching assets for active filter. Type a ticker above and click "+ Add Fund / Stock".</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:20px; color:var(--text-dim);">No matching assets for active filter. Click "+ Add Fund / Stock" above.</td></tr>`;
     return;
   }
 
@@ -741,6 +742,26 @@ async function renderComparisonMatrix() {
   for (let i = 0; i < filteredItems.length; i++) {
     const item = filteredItems[i];
     const ticker = item.ticker.toUpperCase().trim();
+
+    if (!ticker) {
+      results.push({
+        item,
+        ticker: "",
+        assetType: "CUSTOM",
+        categoryName: "Enter Ticker Symbol",
+        endPrice: 0,
+        dayChgPct: 0,
+        divYield: 0,
+        perf1M: 0,
+        perf3M: 0,
+        perf6M: 0,
+        perf12M: 0,
+        perfLong: 0,
+        cagrLong: 0,
+        resLong: { timeLabels: [], dripSeries: [] }
+      });
+      continue;
+    }
 
     const [res1M, res6M, res12M, resLong] = await Promise.all([
       safeComputeReturn(ticker, "1M"),
@@ -803,13 +824,16 @@ async function renderComparisonMatrix() {
     return;
   }
 
-  const maxLongReturn = Math.max(...results.map(r => r.perfLong));
+  const validReturns = results.filter(r => r.ticker !== "").map(r => r.perfLong);
+  const maxLongReturn = validReturns.length > 0 ? Math.max(...validReturns) : 10;
 
   results.forEach((data) => {
     const tr = document.createElement("tr");
 
     let signalHtml = `<span class="signal-badge signal-fair">⚖️ Fair Value</span>`;
-    if (data.divYield > 4.5 || (data.cagrLong > 12.0 && data.perfLong >= maxLongReturn * 0.85)) {
+    if (!data.ticker) {
+      signalHtml = `<span class="signal-badge signal-fair">✏️ Type Ticker</span>`;
+    } else if (data.divYield > 4.5 || (data.cagrLong > 12.0 && data.perfLong >= maxLongReturn * 0.85)) {
       signalHtml = `<span class="signal-badge signal-buy">🔥 Strong Buy</span>`;
     } else if (data.cagrLong < 4.0 || data.perfLong < maxLongReturn * 0.35) {
       signalHtml = `<span class="signal-badge signal-overvalued">⚠️ Lower Yield</span>`;
@@ -817,26 +841,31 @@ async function renderComparisonMatrix() {
 
     const typeBadge = data.assetType === "MUTUAL" 
       ? `<span class="badge-mf">MUTUAL FUND</span>` 
-      : `<span class="badge-etf">ETF</span>`;
+      : (data.ticker ? `<span class="badge-etf">ETF</span>` : '');
+
+    const isFocusTarget = data.item.id === focusId;
+    const inputStyle = !data.ticker
+      ? "width:110px; font-weight:800; text-transform:uppercase; border: 2px solid var(--primary-accent); background: rgba(0,230,153,0.25);"
+      : "width:80px; font-weight:800; text-transform:uppercase;";
 
     tr.innerHTML = `
       <td>
         <div style="display:flex; align-items:center; gap:6px;">
-          <input type="text" value="${data.ticker}" class="comp-ticker-input" style="width:75px; font-weight:800; text-transform:uppercase;">
+          <input type="text" value="${data.ticker}" placeholder="TICKER..." class="comp-ticker-input ${isFocusTarget ? 'focus-target' : ''}" style="${inputStyle}">
           ${typeBadge}
         </div>
       </td>
       <td style="color:var(--text-muted); font-size:0.8rem;">${data.categoryName}</td>
-      <td style="font-family:var(--font-mono); font-weight:700;">${formatCurrency(data.endPrice)}</td>
-      <td class="${data.dayChgPct >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${formatSign(data.dayChgPct)}${data.dayChgPct.toFixed(2)}%</td>
-      <td class="text-gold" style="font-family:var(--font-mono); font-weight:700;">${data.divYield.toFixed(2)}%</td>
-      <td class="${data.perf1M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${formatSign(data.perf1M)}${data.perf1M.toFixed(1)}%</td>
-      <td class="${data.perf3M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${formatSign(data.perf3M)}${data.perf3M.toFixed(1)}%</td>
-      <td class="${data.perf6M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${formatSign(data.perf6M)}${data.perf6M.toFixed(1)}%</td>
-      <td class="${data.perf12M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:700;">${formatSign(data.perf12M)}${data.perf12M.toFixed(1)}%</td>
+      <td style="font-family:var(--font-mono); font-weight:700;">${data.endPrice ? formatCurrency(data.endPrice) : '--'}</td>
+      <td class="${data.dayChgPct >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${data.ticker ? formatSign(data.dayChgPct) + data.dayChgPct.toFixed(2) + '%' : '--'}</td>
+      <td class="text-gold" style="font-family:var(--font-mono); font-weight:700;">${data.ticker ? data.divYield.toFixed(2) + '%' : '--'}</td>
+      <td class="${data.perf1M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${data.ticker ? formatSign(data.perf1M) + data.perf1M.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.perf3M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${data.ticker ? formatSign(data.perf3M) + data.perf3M.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.perf6M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${data.ticker ? formatSign(data.perf6M) + data.perf6M.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.perf12M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:700;">${data.ticker ? formatSign(data.perf12M) + data.perf12M.toFixed(1) + '%' : '--'}</td>
       <td class="${data.perfLong >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:800;">
-        ${formatSign(data.perfLong)}${data.perfLong.toFixed(1)}% 
-        <span style="font-size:0.75rem; opacity:0.8; font-weight:normal;">(${data.cagrLong.toFixed(1)}%/yr)</span>
+        ${data.ticker ? formatSign(data.perfLong) + data.perfLong.toFixed(1) + '%' : '--'} 
+        ${data.ticker ? `<span style="font-size:0.75rem; opacity:0.8; font-weight:normal;">(${data.cagrLong.toFixed(1)}%/yr)</span>` : ''}
       </td>
       <td>${signalHtml}</td>
       <td><button class="btn btn-sm btn-outline-danger remove-comp-btn">✕</button></td>
@@ -857,6 +886,16 @@ async function renderComparisonMatrix() {
       removeComparisonRow(data.item.id);
     });
   });
+
+  if (focusId) {
+    const focusEl = tbody.querySelector(".focus-target");
+    if (focusEl) {
+      setTimeout(() => {
+        focusEl.focus();
+        focusEl.select();
+      }, 50);
+    }
+  }
 
   renderMultiAssetChart(results[0]?.resLong?.timeLabels || [], chartDatasets);
 }
