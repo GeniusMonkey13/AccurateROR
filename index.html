@@ -254,11 +254,29 @@
           </div>
 
           <div class="toolbar-group">
-            <span class="toolbar-label">Dividend Strategy:</span>
-            <div class="btn-group">
-              <button class="drip-pill active" data-drip="ON">🔄 Reinvest Dividends (DRIP)</button>
-              <button class="drip-pill" data-drip="OFF">💵 Price Only (No DRIP)</button>
+            <span class="toolbar-label">Comparison Method / Strategy:</span>
+            <div class="btn-group" style="flex-wrap: wrap;">
+              <button class="strategy-pill active" data-strategy="DRIP">🔄 DRIP (Dividend Reinvest)</button>
+              <button class="strategy-pill" data-strategy="DCA">📅 DCA (Dollar-Cost Average)</button>
+              <button class="strategy-pill" data-strategy="LUMP">💰 Lump Sum (Buy & Hold)</button>
+              <button class="strategy-pill" data-strategy="PRICE">💵 Price Only (No Dividends)</button>
             </div>
+          </div>
+
+          <!-- Custom DCA Strategy Settings Container (Visible when DCA is selected) -->
+          <div id="matrix-dca-settings-container" class="toolbar-group hidden" style="display: flex; gap: 10px; align-items: center; background: rgba(0,230,153,0.08); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap;">
+            <span class="toolbar-label" style="color: var(--primary-accent); font-weight: 700;">DCA Recurring Deposit:</span>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size:0.85rem; color:var(--text-muted);">$</span>
+              <input type="number" id="matrix-dca-amount-input" value="250" step="50" min="10" style="width: 80px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.85rem; font-family: var(--font-mono); font-weight: 700;" />
+            </div>
+            <span class="toolbar-label" style="color: var(--text-muted);">Frequency:</span>
+            <select id="matrix-dca-freq-select" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; font-family: var(--font-mono);">
+              <option value="WEEKLY">Weekly</option>
+              <option value="BIWEEKLY" selected>Bi-Weekly</option>
+              <option value="MONTHLY">Monthly</option>
+            </select>
+            <button id="apply-matrix-dca-btn" class="btn btn-primary btn-sm" style="padding: 4px 12px; font-size: 0.8rem;">Update DCA Strategy</button>
           </div>
 
           <!-- Custom Date Range Picker Container -->

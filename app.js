@@ -594,15 +594,34 @@ function initEventListeners() {
     });
   });
 
-  // DRIP Dividend Strategy Pills
-  document.querySelectorAll(".drip-pill").forEach(pill => {
+  // Strategy Selector Pills (DRIP vs DCA vs Lump Sum vs Price Only)
+  document.querySelectorAll(".strategy-pill").forEach(pill => {
     pill.addEventListener("click", (e) => {
-      document.querySelectorAll(".drip-pill").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".strategy-pill").forEach(p => p.classList.remove("active"));
       e.target.classList.add("active");
-      isMatrixDripEnabled = (e.target.dataset.drip === "ON");
+      activeMatrixStrategy = e.target.dataset.strategy;
+
+      const dcaContainer = document.getElementById("matrix-dca-settings-container");
+      if (dcaContainer) {
+        if (activeMatrixStrategy === "DCA") {
+          dcaContainer.classList.remove("hidden");
+        } else {
+          dcaContainer.classList.add("hidden");
+        }
+      }
+
       renderComparisonMatrix();
     });
   });
+
+  const applyDcaBtn = document.getElementById("apply-matrix-dca-btn");
+  if (applyDcaBtn) {
+    applyDcaBtn.addEventListener("click", () => {
+      matrixDcaAmount = parseFloat(document.getElementById("matrix-dca-amount-input")?.value) || 250;
+      matrixDcaFrequency = document.getElementById("matrix-dca-freq-select")?.value || "BIWEEKLY";
+      renderComparisonMatrix();
+    });
+  }
 
   // Multi-Lot Modal Event Listeners
   const closeLotsBtn = document.getElementById("close-lots-modal-btn");
@@ -649,6 +668,9 @@ let activeAssetFilter = "ALL";
 let activeLongHorizon = "5Y";
 let activeChartType = "BAR";
 let isMatrixDripEnabled = true;
+let activeMatrixStrategy = "DRIP"; // "DRIP" | "DCA" | "LUMP" | "PRICE"
+let matrixDcaAmount = 250;
+let matrixDcaFrequency = "BIWEEKLY";
 let matrixCustomStartDate = "";
 let matrixCustomEndDate = "";
 let multiAssetChartInstance = null;
@@ -826,17 +848,47 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
 
   let totalInvested = 0;
   let totalShares = 0;
+  let currentValue = 0;
 
-  lots.forEach(lot => {
-    const amt = parseFloat(lot.amount) || 0;
-    totalInvested += amt;
-    const buyPrice = getHistoricalPriceOnDate(ticker, lot.date, endPrice);
-    const sharesBought = buyPrice > 0 ? amt / buyPrice : 0;
-    totalShares += sharesBought;
-  });
+  if (activeMatrixStrategy === "DCA") {
+    const freqPeriodsMap = { "WEEKLY": 52, "BIWEEKLY": 26, "MONTHLY": 12 };
+    const periodsPerYear = freqPeriodsMap[matrixDcaFrequency] || 26;
+    const horizonYearsMap = { "1M": 1/12, "3M": 3/12, "6M": 0.5, "YTD": 0.6, "1Y": 1, "3Y": 3, "5Y": 5, "10Y": 10, "MAX": 10 };
+    const yrs = horizonYearsMap[horizonKey] || 5;
+    const totalPeriods = Math.max(1, Math.round(yrs * periodsPerYear));
 
-  const divBoostFactor = isMatrixDripEnabled ? (1 + (divYield / 100) * 2.2) : 1.0;
-  const currentValue = totalShares * endPrice * divBoostFactor;
+    totalInvested = matrixDcaAmount * totalPeriods;
+
+    const avgEntryDiscount = Math.max(0.35, 1 - (yrs * 0.08));
+    const avgDcaPrice = endPrice * avgEntryDiscount;
+    totalShares = avgDcaPrice > 0 ? totalInvested / avgDcaPrice : 0;
+
+    const divBoost = 1 + (divYield / 100) * (yrs / 2);
+    currentValue = totalShares * endPrice * divBoost;
+
+  } else if (activeMatrixStrategy === "PRICE" || activeMatrixStrategy === "LUMP") {
+    lots.forEach(lot => {
+      const amt = parseFloat(lot.amount) || 0;
+      totalInvested += amt;
+      const buyPrice = getHistoricalPriceOnDate(ticker, lot.date, endPrice);
+      const sharesBought = buyPrice > 0 ? amt / buyPrice : 0;
+      totalShares += sharesBought;
+    });
+    currentValue = totalShares * endPrice; // Pure price, no reinvestment boost
+
+  } else {
+    // DRIP (Dividend Reinvestment)
+    lots.forEach(lot => {
+      const amt = parseFloat(lot.amount) || 0;
+      totalInvested += amt;
+      const buyPrice = getHistoricalPriceOnDate(ticker, lot.date, endPrice);
+      const sharesBought = buyPrice > 0 ? amt / buyPrice : 0;
+      totalShares += sharesBought;
+    });
+    const divBoostFactor = 1 + (divYield / 100) * 2.2;
+    currentValue = totalShares * endPrice * divBoostFactor;
+  }
+
   const totalProfit = currentValue - totalInvested;
   const totalProfitPct = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
