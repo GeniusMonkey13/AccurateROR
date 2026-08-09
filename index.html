@@ -273,10 +273,21 @@
           </table>
         </div>
 
-        <!-- Multi-Asset Multi-Line Overlay Comparison Chart -->
-        <div class="comparison-chart-wrapper" style="margin-top: 24px; position: relative; height: 320px;">
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary-accent); margin-bottom: 12px;">📊 Multi-Fund Performance Growth Overlay</h4>
-          <canvas id="multiAssetChart"></canvas>
+        <!-- Multi-Asset Side-by-Side Comparison Chart -->
+        <div class="comparison-chart-wrapper" style="margin-top: 24px; position: relative; background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--primary-accent); margin: 0; display: flex; align-items: center; gap: 8px;">
+              📊 Multi-Fund & Stock Side-by-Side Return Comparison
+            </h4>
+            <div class="btn-group">
+              <button class="chart-type-pill active" data-chart-type="BAR">📊 Side-by-Side Bar Chart</button>
+              <button class="chart-type-pill" data-chart-type="MULTI_BAR">🏆 1Y vs Long-Term Comparison</button>
+              <button class="chart-type-pill" data-chart-type="LINE">📈 Growth Over Time (Line)</button>
+            </div>
+          </div>
+          <div style="height: 340px; position: relative;">
+            <canvas id="multiAssetChart"></canvas>
+          </div>
         </div>
       </section>
 

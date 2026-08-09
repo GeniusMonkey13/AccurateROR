@@ -618,6 +618,31 @@ select option, .custom-select option, .date-select option {
   font-weight: 800;
 }
 
+.chart-type-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 5px 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chart-type-pill:hover {
+  border-color: var(--primary-accent);
+  color: #ffffff;
+}
+
+.chart-type-pill.active {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: #0d131f;
+  font-weight: 800;
+}
+
 .badge-mf {
   background: rgba(139, 92, 246, 0.25);
   border: 1px solid #8b5cf6;

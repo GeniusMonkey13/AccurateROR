@@ -564,6 +564,16 @@ function initEventListeners() {
       renderComparisonMatrix();
     });
   });
+
+  // Chart Type Pills
+  document.querySelectorAll(".chart-type-pill").forEach(pill => {
+    pill.addEventListener("click", (e) => {
+      document.querySelectorAll(".chart-type-pill").forEach(p => p.classList.remove("active"));
+      e.target.classList.add("active");
+      activeChartType = e.target.dataset.chartType;
+      renderComparisonMatrix();
+    });
+  });
 }
 
 // Global Comparison Matrix State & Multi-Asset Chart Instance
@@ -580,6 +590,7 @@ let comparisonMatrixData = [
 ];
 let activeAssetFilter = "ALL";
 let activeLongHorizon = "5Y";
+let activeChartType = "BAR";
 let multiAssetChartInstance = null;
 
 const FundCategoryMap = {
@@ -897,10 +908,10 @@ async function renderComparisonMatrix(focusId = null) {
     }
   }
 
-  renderMultiAssetChart(results[0]?.resLong?.timeLabels || [], chartDatasets);
+  renderMultiAssetChart(results);
 }
 
-function renderMultiAssetChart(labels, datasets) {
+function renderMultiAssetChart(results) {
   const canvas = document.getElementById("multiAssetChart");
   if (!canvas) return;
 
@@ -908,55 +919,173 @@ function renderMultiAssetChart(labels, datasets) {
     multiAssetChartInstance.destroy();
   }
 
+  const validResults = (results || []).filter(r => r && r.ticker !== "");
+  if (validResults.length === 0) return;
+
   const ctx = canvas.getContext("2d");
-  multiAssetChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: "index",
-        intersect: false
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: "top",
-          labels: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11 } }
-        },
-        tooltip: {
-          backgroundColor: "rgba(18, 24, 38, 0.95)",
-          titleColor: "#00e699",
-          bodyColor: "#ffffff",
-          borderColor: "#2a364f",
+  const chartColors = ["#00e699", "#ffb800", "#3b82f6", "#ec4899", "#8b5cf6", "#06b6d4", "#f97316", "#a855f7", "#10b981", "#6366f1"];
+
+  if (activeChartType === "BAR") {
+    // Side-by-side Bar Chart showing Total Return % for every stock/fund/ETF
+    const labels = validResults.map(r => `${r.ticker} (${r.assetType === 'MUTUAL' ? 'MF' : 'ETF'})`);
+    const data = validResults.map(r => parseFloat(r.perfLong.toFixed(2)));
+    const bgColors = validResults.map((r, i) => chartColors[i % chartColors.length]);
+
+    multiAssetChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: `Side-by-Side Total Return % (${activeLongHorizon})`,
+          data: data,
+          backgroundColor: bgColors,
+          borderColor: bgColors,
           borderWidth: 1,
-          callbacks: {
-            label: function(context) {
-              return `${context.dataset.label.split(' ')[0]}: $${context.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11 } } },
+          tooltip: {
+            backgroundColor: "rgba(18, 24, 38, 0.95)",
+            titleColor: "#00e699",
+            bodyColor: "#ffffff",
+            borderColor: "#2a364f",
+            borderWidth: 1,
+            callbacks: {
+              label: (context) => `Total Return (${activeLongHorizon}): ${context.raw >= 0 ? '+' : ''}${context.raw}%`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: "rgba(255, 255, 255, 0.05)" },
+            ticks: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11, weight: "bold" } }
+          },
+          y: {
+            grid: { color: "rgba(255, 255, 255, 0.08)" },
+            ticks: {
+              color: "#64748b",
+              font: { family: "JetBrains Mono", size: 10 },
+              callback: (val) => val + "%"
             }
           }
         }
+      }
+    });
+  } else if (activeChartType === "MULTI_BAR") {
+    // Grouped Bar Chart comparing 12-Month Return vs Selected Long-Term Return
+    const labels = validResults.map(r => r.ticker);
+    const perf12MData = validResults.map(r => parseFloat(r.perf12M.toFixed(2)));
+    const perfLongData = validResults.map(r => parseFloat(r.perfLong.toFixed(2)));
+
+    multiAssetChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "12-Month Return %",
+            data: perf12MData,
+            backgroundColor: "rgba(59, 130, 246, 0.8)",
+            borderRadius: 6
+          },
+          {
+            label: `${activeLongHorizon} Total Return %`,
+            data: perfLongData,
+            backgroundColor: "rgba(0, 230, 153, 0.85)",
+            borderRadius: 6
+          }
+        ]
       },
-      scales: {
-        x: {
-          grid: { color: "rgba(255, 255, 255, 0.05)" },
-          ticks: { color: "#64748b", font: { family: "JetBrains Mono", size: 10 }, maxTicksLimit: 8 }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11 } } },
+          tooltip: {
+            backgroundColor: "rgba(18, 24, 38, 0.95)",
+            titleColor: "#00e699",
+            bodyColor: "#ffffff",
+            borderColor: "#2a364f",
+            borderWidth: 1,
+            callbacks: {
+              label: (context) => `${context.dataset.label}: ${context.raw >= 0 ? '+' : ''}${context.raw}%`
+            }
+          }
         },
-        y: {
-          grid: { color: "rgba(255, 255, 255, 0.05)" },
-          ticks: {
-            color: "#64748b",
-            font: { family: "JetBrains Mono", size: 10 },
-            callback: value => `$${value.toLocaleString()}`
+        scales: {
+          x: {
+            grid: { color: "rgba(255, 255, 255, 0.05)" },
+            ticks: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11, weight: "bold" } }
+          },
+          y: {
+            grid: { color: "rgba(255, 255, 255, 0.08)" },
+            ticks: {
+              color: "#64748b",
+              font: { family: "JetBrains Mono", size: 10 },
+              callback: (val) => val + "%"
+            }
           }
         }
       }
-    }
-  });
+    });
+  } else {
+    // Historical Line Chart
+    const timeLabels = validResults[0]?.resLong?.timeLabels || [];
+    const chartDatasets = [];
+
+    validResults.forEach((r, i) => {
+      if (r.resLong && r.resLong.dripSeries && r.resLong.dripSeries.length > 0) {
+        const color = chartColors[i % chartColors.length];
+        chartDatasets.push({
+          label: `${r.ticker} (${r.perfLong >= 0 ? '+' : ''}${r.perfLong.toFixed(1)}%)`,
+          data: r.resLong.dripSeries,
+          borderColor: color,
+          backgroundColor: color,
+          fill: false,
+          tension: 0.2,
+          borderWidth: 2,
+          pointRadius: 0
+        });
+      }
+    });
+
+    multiAssetChartInstance = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: timeLabels,
+        datasets: chartDatasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: true, position: "top", labels: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11 } } },
+          tooltip: {
+            backgroundColor: "rgba(18, 24, 38, 0.95)",
+            titleColor: "#00e699",
+            bodyColor: "#ffffff",
+            borderColor: "#2a364f",
+            borderWidth: 1,
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label.split(' ')[0]}: $${context.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: "rgba(255, 255, 255, 0.05)" }, ticks: { color: "#64748b", font: { family: "JetBrains Mono", size: 10 }, maxTicksLimit: 8 } },
+          y: { grid: { color: "rgba(255, 255, 255, 0.05)" }, ticks: { color: "#64748b", font: { family: "JetBrains Mono", size: 10 }, callback: (v) => '$' + v.toLocaleString() } }
+        }
+      }
+    });
+  }
 }
 
 function toggleVariableDailyPanel() {
