@@ -217,9 +217,12 @@
             <p class="subtitle">Side-by-side comparison of Mutual Funds & ETFs with accurate DRIP returns across selectable short-term (1M, 3M, 6M, 12M) & long-term (3Y, 5Y, 10Y, MAX) horizons.</p>
           </div>
           <div class="header-action-buttons">
-            <button id="add-comparison-row-btn" class="btn btn-secondary btn-sm">+ Add Custom Asset</button>
-            <button id="load-etrade-preset-btn" class="btn btn-primary btn-sm">⚡ Load E*TRADE Mix (ETFs & Mutual Funds)</button>
-            <button id="load-mutual-preset-btn" class="btn btn-secondary btn-sm">🔥 Top Mutual Funds (FSELX, VFIAX, VTSAX, VVOAX)</button>
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+              <input type="text" id="add-asset-ticker-input" placeholder="Ticker (e.g. AAPL, IVV, FXAIX)..." style="padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.35); color: #fff; font-weight: 700; text-transform: uppercase; width: 190px; font-size: 0.85rem;" />
+              <button id="add-comparison-row-btn" class="btn btn-primary btn-sm">+ Add Fund / Stock</button>
+            </div>
+            <button id="load-etrade-preset-btn" class="btn btn-secondary btn-sm">⚡ Load E*TRADE Mix</button>
+            <button id="load-mutual-preset-btn" class="btn btn-secondary btn-sm">🔥 Top Mutual Funds</button>
           </div>
         </div>
 
