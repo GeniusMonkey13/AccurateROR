@@ -550,6 +550,92 @@ select option, .custom-select option, .date-select option {
   cursor: pointer;
 }
 
+/* Multi-Stock / ETF Comparison Matrix Styles */
+.comparison-matrix-card {
+  margin-bottom: 24px;
+}
+
+.header-action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.comparison-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-top: 14px;
+}
+
+.comparison-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.comparison-matrix-table th {
+  background: rgba(18, 24, 38, 0.95);
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.comparison-matrix-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.comparison-matrix-table input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+}
+
+.comparison-matrix-table input:focus {
+  border-color: var(--primary-accent);
+  outline: none;
+}
+
+.signal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.signal-buy {
+  background: rgba(0, 230, 153, 0.18);
+  border: 1px solid var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+.signal-fair {
+  background: rgba(255, 184, 0, 0.18);
+  border: 1px solid var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.signal-overvalued {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid #ef4444;
+  color: #ef4444;
+}
+
 /* Watchlist Grid */
 .watchlist-grid {
   display: grid;

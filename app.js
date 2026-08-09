@@ -518,6 +518,199 @@ function initEventListeners() {
   // CSV Download button
   const csvBtn = document.getElementById("download-csv-btn");
   if (csvBtn) csvBtn.addEventListener("click", exportCSV);
+
+  // Comparison Matrix Event Listeners
+  const addCompBtn = document.getElementById("add-comparison-row-btn");
+  if (addCompBtn) addCompBtn.addEventListener("click", () => addComparisonRow());
+
+  const loadPresetFundsBtn = document.getElementById("load-preset-funds-btn");
+  if (loadPresetFundsBtn) loadPresetFundsBtn.addEventListener("click", loadPresetETFComparison);
+}
+
+// Global Comparison Matrix State & Multi-Asset Chart Instance
+let comparisonMatrixData = [
+  { ticker: "SPY", date: "2021-08-01", amount: 10000, strategy: "drip" },
+  { ticker: "QQQ", date: "2021-08-01", amount: 10000, strategy: "drip" },
+  { ticker: "VOO", date: "2021-08-01", amount: 10000, strategy: "drip" },
+  { ticker: "SCHD", date: "2021-08-01", amount: 10000, strategy: "drip" }
+];
+let multiAssetChartInstance = null;
+
+function addComparisonRow(ticker = "VTI", dateStr = "2021-08-01", amount = 10000, strategy = "drip") {
+  comparisonMatrixData.push({ ticker, date: dateStr, amount, strategy });
+  renderComparisonMatrix();
+}
+
+function loadPresetETFComparison() {
+  comparisonMatrixData = [
+    { ticker: "SPY", date: "2021-08-01", amount: 10000, strategy: "drip" },
+    { ticker: "QQQ", date: "2021-08-01", amount: 10000, strategy: "drip" },
+    { ticker: "VOO", date: "2021-08-01", amount: 10000, strategy: "drip" },
+    { ticker: "SCHD", date: "2021-08-01", amount: 10000, strategy: "drip" },
+    { ticker: "VTI", date: "2021-08-01", amount: 10000, strategy: "drip" },
+    { ticker: "JEPI", date: "2021-08-01", amount: 10000, strategy: "drip" }
+  ];
+  renderComparisonMatrix();
+}
+
+function removeComparisonRow(index) {
+  comparisonMatrixData.splice(index, 1);
+  renderComparisonMatrix();
+}
+
+async function renderComparisonMatrix() {
+  const tbody = document.getElementById("comparison-matrix-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-dim);">Analyzing real-time valuation & dividend data across candidates...</td></tr>`;
+
+  const results = [];
+  const chartDatasets = [];
+  const chartColors = ["#00e699", "#ffb800", "#3b82f6", "#ec4899", "#8b5cf6", "#06b6d4", "#f97316"];
+
+  for (let i = 0; i < comparisonMatrixData.length; i++) {
+    const item = comparisonMatrixData[i];
+    try {
+      const res = await computeAccurateReturn(item.ticker, "CUSTOM", item.amount, item.strategy, item.date);
+      results.push({ item, res });
+
+      if (res.strategySeries && res.strategySeries.length > 0) {
+        const color = chartColors[i % chartColors.length];
+        chartDatasets.push({
+          label: `${item.ticker} (${res.dripGainPct >= 0 ? '+' : ''}${res.dripGainPct.toFixed(1)}%)`,
+          data: res.strategySeries,
+          borderColor: color,
+          backgroundColor: color,
+          fill: false,
+          tension: 0.2,
+          borderWidth: 2,
+          pointRadius: 0
+        });
+      }
+    } catch (err) {
+      console.warn(`Failed to compute comparison for ${item.ticker}:`, err);
+    }
+  }
+
+  tbody.innerHTML = "";
+
+  if (results.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-dim);">No candidate assets added yet. Click "+ Add Custom Asset" or "Load Top Choice ETFs".</td></tr>`;
+    return;
+  }
+
+  // Find max return to judge relative fair valuation
+  const maxReturn = Math.max(...results.map(r => r.res.dripGainPct));
+
+  results.forEach(({ item, res }, idx) => {
+    const tr = document.createElement("tr");
+
+    // Valuation & Buy Signal Logic based on real dividend yield, price gain & CAGR vs candidates
+    const divBoostPct = res.divBoostPct;
+    const cagr = res.cagrDrip;
+    const retPct = res.dripGainPct;
+
+    let signalHtml = `<span class="signal-badge signal-fair">⚖️ Fairly Priced</span>`;
+    if (divBoostPct > 8.0 || (cagr > 12.0 && retPct >= maxReturn * 0.9)) {
+      signalHtml = `<span class="signal-badge signal-buy">🔥 Strong Buy / Good Value</span>`;
+    } else if (cagr < 5.0 || retPct < maxReturn * 0.4) {
+      signalHtml = `<span class="signal-badge signal-overvalued">⚠️ Premium / Lower Yield</span>`;
+    }
+
+    tr.innerHTML = `
+      <td><input type="text" value="${item.ticker}" class="comp-ticker-input" style="width:75px; font-weight:800; text-transform:uppercase;"></td>
+      <td><input type="date" value="${item.date}" class="comp-date-input" style="width:130px;"></td>
+      <td><input type="number" value="${item.amount}" class="comp-amount-input" style="width:90px;" step="500"></td>
+      <td style="font-family:var(--font-mono); font-weight:700;">${formatCurrency(res.endPrice)}</td>
+      <td><span class="text-gold" style="font-weight:700;">${formatSign(divBoostPct)}${divBoostPct.toFixed(2)}%</span></td>
+      <td class="${res.dripGainPct >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:800;">${formatSign(res.dripGainPct)}${res.dripGainPct.toFixed(2)}%</td>
+      <td style="font-family:var(--font-mono);">${cagr.toFixed(2)}% / yr</td>
+      <td>${signalHtml}</td>
+      <td><button class="btn btn-sm btn-outline-danger remove-comp-btn">✕</button></td>
+    `;
+
+    tbody.appendChild(tr);
+
+    // Attach row input change events
+    const tInput = tr.querySelector(".comp-ticker-input");
+    const dInput = tr.querySelector(".comp-date-input");
+    const aInput = tr.querySelector(".comp-amount-input");
+
+    const updateItemState = () => {
+      comparisonMatrixData[idx].ticker = tInput.value.toUpperCase().trim();
+      comparisonMatrixData[idx].date = dInput.value;
+      comparisonMatrixData[idx].amount = parseFloat(aInput.value) || 10000;
+      renderComparisonMatrix();
+    };
+
+    tInput.addEventListener("change", updateItemState);
+    dInput.addEventListener("change", updateItemState);
+    aInput.addEventListener("change", updateItemState);
+
+    tr.querySelector(".remove-comp-btn").addEventListener("click", () => removeComparisonRow(idx));
+  });
+
+  // Render Multi-Asset Overlay Chart
+  renderMultiAssetChart(results[0]?.res?.timeLabels || [], chartDatasets);
+}
+
+function renderMultiAssetChart(labels, datasets) {
+  const canvas = document.getElementById("multiAssetChart");
+  if (!canvas) return;
+
+  if (multiAssetChartInstance) {
+    multiAssetChartInstance.destroy();
+  }
+
+  const ctx = canvas.getContext("2d");
+  multiAssetChartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: "rgba(18, 24, 38, 0.95)",
+          titleColor: "#00e699",
+          bodyColor: "#ffffff",
+          borderColor: "#2a364f",
+          borderWidth: 1,
+          callbacks: {
+            label: function(context) {
+              return `${context.dataset.label.split(' ')[0]}: $${context.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: "rgba(255, 255, 255, 0.05)" },
+          ticks: { color: "#64748b", font: { family: "JetBrains Mono", size: 10 }, maxTicksLimit: 8 }
+        },
+        y: {
+          grid: { color: "rgba(255, 255, 255, 0.05)" },
+          ticks: {
+            color: "#64748b",
+            font: { family: "JetBrains Mono", size: 10 },
+            callback: value => `$${value.toLocaleString()}`
+          }
+        }
+      }
+    }
+  });
 }
 
 function toggleVariableDailyPanel() {
@@ -905,6 +1098,7 @@ async function calculateAndRender() {
     renderComparisonChart(currentData);
     renderTable(currentData);
     renderDailyPriceTable(currentData.dailyRecords);
+    renderComparisonMatrix();
     
     updateLoadingProgress(100, "Done");
   } catch (err) {

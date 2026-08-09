@@ -209,6 +209,48 @@
         </div>
       </section>
 
+      <!-- Multi-Stock & ETF Valuation Comparison Matrix -->
+      <section class="card comparison-matrix-card">
+        <div class="card-header">
+          <div>
+            <h3>⚖️ Choice Funds & ETF Valuation Comparison Matrix</h3>
+            <p class="subtitle">Compare candidate stocks/ETFs side-by-side with real-time dividend yields, returns, and valuation status to decide what is fairly priced to buy now</p>
+          </div>
+          <div class="header-action-buttons">
+            <button id="add-comparison-row-btn" class="btn btn-secondary btn-sm">+ Add Custom Asset</button>
+            <button id="load-preset-funds-btn" class="btn btn-primary btn-sm">⚡ Load Top Choice ETFs (SPY, QQQ, VOO, SCHD, VTI, JEPI)</button>
+          </div>
+        </div>
+
+        <!-- Interactive Comparison Matrix Table -->
+        <div class="comparison-table-wrapper">
+          <table class="comparison-matrix-table">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Purchase Date</th>
+                <th>Principal / Amount ($)</th>
+                <th>Current Price</th>
+                <th>Div Yield / Boost</th>
+                <th>Accurate Return %</th>
+                <th>CAGR %</th>
+                <th>Fair Value & Buy Signal</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-matrix-tbody">
+              <!-- Dynamically populated portfolio comparison rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Multi-Asset Multi-Line Overlay Comparison Chart -->
+        <div class="comparison-chart-wrapper" style="margin-top: 24px; position: relative; height: 320px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary-accent); margin-bottom: 12px;">📊 Multi-Fund Performance Growth Overlay</h4>
+          <canvas id="multiAssetChart"></canvas>
+        </div>
+      </section>
+
       <!-- Custom Watchlist & Portfolio Customizer Section -->
       <section class="card watchlist-card">
         <div class="card-header">
