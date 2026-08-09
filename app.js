@@ -451,6 +451,8 @@ function initEventListeners() {
   document.getElementById("initial-investment").addEventListener("change", calculateAndRender);
   const sharesInput = document.getElementById("custom-shares-input");
   if (sharesInput) sharesInput.addEventListener("change", calculateAndRender);
+  const dcaInput = document.getElementById("dca-amount-input");
+  if (dcaInput) dcaInput.addEventListener("change", calculateAndRender);
 
   // Strategy select event
   const strategySelect = document.getElementById("strategy-select");
@@ -656,7 +658,7 @@ function getVariableDailySchedule() {
 }
 
 // Async Math Engine consuming real price time-series and investment strategies
-async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, strategyMode = "drip", customDateStr = null, customSharesCount = null) {
+async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, strategyMode = "drip", customDateStr = null, customSharesCount = null, dcaMonthlyAmount = 250) {
   const selectedDate = customDateStr || getSelectedDropdownDate();
   const realMarketData = await fetchRealMarketData(tickerSymbol, horizon, selectedDate);
   const pricePoints = realMarketData.pricePoints || [];
@@ -699,7 +701,7 @@ async function computeAccurateReturn(tickerSymbol, horizon, initialPrincipal, st
 
   let divIdx = 0;
   let scheduleIdx = 0;
-  const dcaMonthlyContribution = 250;
+  const dcaMonthlyContribution = isNaN(dcaMonthlyAmount) ? 250 : dcaMonthlyAmount;
 
   for (let i = 0; i < pricePoints.length; i++) {
     const pt = pricePoints[i];
@@ -884,6 +886,9 @@ async function calculateAndRender() {
   const sharesInput = document.getElementById("custom-shares-input");
   const customSharesCount = sharesInput && sharesInput.value ? parseFloat(sharesInput.value) : null;
 
+  const dcaInput = document.getElementById("dca-amount-input");
+  const dcaMonthlyAmount = dcaInput && dcaInput.value ? parseFloat(dcaInput.value) : 250;
+
   const strategySelect = document.getElementById("strategy-select");
   const strategyMode = strategySelect ? strategySelect.value : "drip";
 
@@ -893,7 +898,7 @@ async function calculateAndRender() {
 
   try {
     updateLoadingProgress(50, `Calculating DRIP & ${strategyMode.toUpperCase()} returns...`);
-    currentData = await computeAccurateReturn(symbol, horizon, initialPrincipal, strategyMode, customDateStr, customSharesCount);
+    currentData = await computeAccurateReturn(symbol, horizon, initialPrincipal, strategyMode, customDateStr, customSharesCount, dcaMonthlyAmount);
     
     updateLoadingProgress(80, "Rendering precision graph & inspection logs...");
     renderHeaderAndKPIs(currentData);

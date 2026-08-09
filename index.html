@@ -136,8 +136,8 @@
           </div>
 
           <div class="control-item">
-            <label for="custom-shares-input">Optional: Shares Held</label>
-            <input type="number" id="custom-shares-input" placeholder="Auto-calculated" step="0.001">
+            <label for="dca-amount-input">Recurring DCA Contribution ($)</label>
+            <input type="number" id="dca-amount-input" value="250" min="0" step="50" placeholder="e.g. 250">
           </div>
 
           <div class="control-item">
@@ -145,7 +145,7 @@
             <select id="strategy-select" class="custom-select">
               <option value="drip">DRIP (Reinvest All Dividends)</option>
               <option value="cash">Cash Dividend Payout</option>
-              <option value="dca">DCA (Dollar Cost Averaging - Monthly $250)</option>
+              <option value="dca">DCA (Dollar Cost Averaging - Monthly)</option>
               <option value="lump_half_dca">Lump Sum 50% + 50% DCA</option>
               <option value="variable_daily">⚡ Custom Daily Cashflow (e.g., % Hot Dog Vendor Daily Income)</option>
             </select>
