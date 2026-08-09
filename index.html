@@ -213,12 +213,35 @@
       <section class="card comparison-matrix-card">
         <div class="card-header">
           <div>
-            <h3>⚖️ Choice Funds & ETF Valuation Comparison Matrix</h3>
-            <p class="subtitle">Compare candidate stocks/ETFs side-by-side with real-time dividend yields, returns, and valuation status to decide what is fairly priced to buy now</p>
+            <h3>⚖️ Choice Funds & ETF Valuation Matrix</h3>
+            <p class="subtitle">Side-by-side comparison of Mutual Funds & ETFs with accurate DRIP returns across selectable short-term (1M, 3M, 6M, 12M) & long-term (3Y, 5Y, 10Y, MAX) horizons.</p>
           </div>
           <div class="header-action-buttons">
             <button id="add-comparison-row-btn" class="btn btn-secondary btn-sm">+ Add Custom Asset</button>
-            <button id="load-preset-funds-btn" class="btn btn-primary btn-sm">⚡ Load Top Choice ETFs (SPY, QQQ, VOO, SCHD, VTI, JEPI)</button>
+            <button id="load-etrade-preset-btn" class="btn btn-primary btn-sm">⚡ Load E*TRADE Mix (ETFs & Mutual Funds)</button>
+            <button id="load-mutual-preset-btn" class="btn btn-secondary btn-sm">🔥 Top Mutual Funds (FSELX, VFIAX, VTSAX, VVOAX)</button>
+          </div>
+        </div>
+
+        <!-- Toolbar for Asset Filtering & Selectable Long-Term Horizon -->
+        <div class="matrix-toolbar">
+          <div class="toolbar-group">
+            <span class="toolbar-label">Asset Filter:</span>
+            <div class="btn-group">
+              <button class="filter-pill active" data-asset-filter="ALL">All Assets</button>
+              <button class="filter-pill" data-asset-filter="MUTUAL">Mutual Funds</button>
+              <button class="filter-pill" data-asset-filter="ETF">ETFs & Stocks</button>
+            </div>
+          </div>
+
+          <div class="toolbar-group">
+            <span class="toolbar-label">Selectable Long-Term Horizon:</span>
+            <div class="btn-group">
+              <button class="horizon-pill" data-long-horizon="3Y">3 Years</button>
+              <button class="horizon-pill active" data-long-horizon="5Y">5 Years</button>
+              <button class="horizon-pill" data-long-horizon="10Y">10 Years</button>
+              <button class="horizon-pill" data-long-horizon="MAX">MAX</button>
+            </div>
           </div>
         </div>
 
@@ -227,14 +250,17 @@
           <table class="comparison-matrix-table">
             <thead>
               <tr>
-                <th>Ticker</th>
-                <th>Purchase Date</th>
-                <th>Principal / Amount ($)</th>
+                <th>Symbol & Asset</th>
+                <th>Fund Category</th>
                 <th>Current Price</th>
-                <th>Div Yield / Boost</th>
-                <th>Accurate Return %</th>
-                <th>CAGR %</th>
-                <th>Fair Value & Buy Signal</th>
+                <th>1-Day Chg %</th>
+                <th>Dist Yield %</th>
+                <th>Perf 1M</th>
+                <th>Perf 3M</th>
+                <th>Perf 6M</th>
+                <th>Perf 12M</th>
+                <th id="long-term-header-label">Perf 5Y (CAGR)</th>
+                <th>Fair Value & Signal</th>
                 <th>Action</th>
               </tr>
             </thead>

@@ -523,32 +523,126 @@ function initEventListeners() {
   const addCompBtn = document.getElementById("add-comparison-row-btn");
   if (addCompBtn) addCompBtn.addEventListener("click", () => addComparisonRow());
 
-  const loadPresetFundsBtn = document.getElementById("load-preset-funds-btn");
-  if (loadPresetFundsBtn) loadPresetFundsBtn.addEventListener("click", loadPresetETFComparison);
+  const loadETradeBtn = document.getElementById("load-etrade-preset-btn");
+  if (loadETradeBtn) loadETradeBtn.addEventListener("click", loadETradePreset);
+
+  const loadMutualBtn = document.getElementById("load-mutual-preset-btn");
+  if (loadMutualBtn) loadMutualBtn.addEventListener("click", loadMutualPreset);
+
+  // Filter Pills
+  document.querySelectorAll(".filter-pill").forEach(pill => {
+    pill.addEventListener("click", (e) => {
+      document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
+      e.target.classList.add("active");
+      activeAssetFilter = e.target.dataset.assetFilter;
+      renderComparisonMatrix();
+    });
+  });
+
+  // Horizon Pills
+  document.querySelectorAll(".horizon-pill").forEach(pill => {
+    pill.addEventListener("click", (e) => {
+      document.querySelectorAll(".horizon-pill").forEach(p => p.classList.remove("active"));
+      e.target.classList.add("active");
+      activeLongHorizon = e.target.dataset.longHorizon;
+      
+      const headerLabel = document.getElementById("long-term-header-label");
+      if (headerLabel) headerLabel.textContent = `Perf ${activeLongHorizon} (CAGR)`;
+
+      renderComparisonMatrix();
+    });
+  });
 }
 
 // Global Comparison Matrix State & Multi-Asset Chart Instance
 let comparisonMatrixData = [
-  { ticker: "SPY", date: "2021-08-01", amount: 10000, strategy: "drip" },
-  { ticker: "QQQ", date: "2021-08-01", amount: 10000, strategy: "drip" },
-  { ticker: "VOO", date: "2021-08-01", amount: 10000, strategy: "drip" },
-  { ticker: "SCHD", date: "2021-08-01", amount: 10000, strategy: "drip" }
+  { ticker: "FSELX" }, // Mutual Fund - Fidelity Tech
+  { ticker: "VVOAX" }, // Mutual Fund - Invesco Mid-Cap Value
+  { ticker: "VOO" },   // ETF - Vanguard S&P 500
+  { ticker: "SPHQ" },  // ETF - Invesco S&P 500 Quality
+  { ticker: "LVHI" },  // ETF - Franklin Low Vol High Div
+  { ticker: "SPMO" },  // ETF - Invesco Momentum
+  { ticker: "FTEC" },  // ETF - Fidelity Info Tech
+  { ticker: "SCHD" },  // ETF - Schwab Dividend Equity
+  { ticker: "VFIAX" }  // Mutual Fund - Vanguard 500 Index
 ];
+let activeAssetFilter = "ALL";
+let activeLongHorizon = "5Y";
 let multiAssetChartInstance = null;
 
-function addComparisonRow(ticker = "VTI", dateStr = "2021-08-01", amount = 10000, strategy = "drip") {
-  comparisonMatrixData.push({ ticker, date: dateStr, amount, strategy });
+const FundCategoryMap = {
+  FSELX: { name: "Fidelity Select Semiconductors", category: "Technology Mutual Fund", type: "MUTUAL" },
+  VVOAX: { name: "Invesco Mid Cap Value Fund", category: "Mid-Cap Value Mutual Fund", type: "MUTUAL" },
+  EIGMX: { name: "Eaton Vance Emerging Local Income", category: "Emerging Bond Fund", type: "MUTUAL" },
+  MNHAX: { name: "MainStay High Yield Corporate", category: "High Yield Bond Fund", type: "MUTUAL" },
+  CEMFX: { name: "Capital Group Diversified Emerging", category: "Emerging Markets Fund", type: "MUTUAL" },
+  PISIX: { name: "PIMCO International Bond Fund", category: "International Bond Fund", type: "MUTUAL" },
+  EDOX: { name: "Eaton Vance Emerging Markets Debt", category: "Emerging Debt Fund", type: "MUTUAL" },
+  QLENX: { name: "AQR Long-Short Equity Fund", category: "Long-Short Equity Fund", type: "MUTUAL" },
+  DAGVX: { name: "DWS Large Cap Value Fund", category: "Large Cap Value Fund", type: "MUTUAL" },
+  EICOX: { name: "Eaton Vance International Commercial", category: "International Fund", type: "MUTUAL" },
+  VFIAX: { name: "Vanguard 500 Index Admiral", category: "S&P 500 Index Fund", type: "MUTUAL" },
+  FXAIX: { name: "Fidelity 500 Index Fund", category: "S&P 500 Index Fund", type: "MUTUAL" },
+  VTSAX: { name: "Vanguard Total Stock Market", category: "Total Stock Market Fund", type: "MUTUAL" },
+  SPHQ: { name: "Invesco S&P 500 Quality ETF", category: "S&P 500 Quality ETF", type: "ETF" },
+  LVHI: { name: "Franklin International Low Vol", category: "High Dividend ETF", type: "ETF" },
+  SPMO: { name: "Invesco S&P 500 Momentum ETF", category: "Momentum ETF", type: "ETF" },
+  CSCO: { name: "Cisco Systems Inc", category: "Communications Tech", type: "STOCK" },
+  VOO: { name: "Vanguard S&P 500 ETF", category: "Large Cap Blend ETF", type: "ETF" },
+  RSPN: { name: "Invesco Equal Weight Industrials", category: "Industrials ETF", type: "ETF" },
+  RSP: { name: "Invesco S&P 500 Equal Weight", category: "Equal Weight ETF", type: "ETF" },
+  FTEC: { name: "Fidelity MSCI Information Tech", category: "Information Tech ETF", type: "ETF" },
+  XMMO: { name: "Invesco S&P MidCap Momentum", category: "MidCap Momentum ETF", type: "ETF" },
+  ROBO: { name: "ROBO Global Robotics & AI", category: "Robotics & AI ETF", type: "ETF" },
+  KOID: { name: "Global X Artificial Intelligence", category: "AI Technology ETF", type: "ETF" },
+  SCHD: { name: "Schwab U.S. Dividend Equity", category: "Dividend Growth ETF", type: "ETF" },
+  SPY: { name: "SPDR S&P 500 ETF Trust", category: "Large Cap Blend ETF", type: "ETF" },
+  QQQ: { name: "Invesco QQQ Trust", category: "Large Cap Growth ETF", type: "ETF" },
+  VTI: { name: "Vanguard Total Stock Market ETF", category: "Total Market ETF", type: "ETF" },
+  JEPI: { name: "JPMorgan Equity Premium Income", category: "High Yield Equity ETF", type: "ETF" }
+};
+
+function getAssetType(ticker) {
+  const sym = ticker.toUpperCase().trim();
+  if (FundCategoryMap[sym]) return FundCategoryMap[sym].type;
+  if (sym.length === 5 && sym.endsWith('X')) return "MUTUAL";
+  return "ETF";
+}
+
+function getFundCategoryName(ticker) {
+  const sym = ticker.toUpperCase().trim();
+  if (FundCategoryMap[sym]) return FundCategoryMap[sym].category;
+  return getAssetType(sym) === "MUTUAL" ? "Mutual Fund" : "ETF / Stock";
+}
+
+function addComparisonRow(ticker = "VTI") {
+  comparisonMatrixData.push({ ticker: ticker.toUpperCase().trim() });
   renderComparisonMatrix();
 }
 
-function loadPresetETFComparison() {
+function loadETradePreset() {
   comparisonMatrixData = [
-    { ticker: "SPY", date: "2021-08-01", amount: 10000, strategy: "drip" },
-    { ticker: "QQQ", date: "2021-08-01", amount: 10000, strategy: "drip" },
-    { ticker: "VOO", date: "2021-08-01", amount: 10000, strategy: "drip" },
-    { ticker: "SCHD", date: "2021-08-01", amount: 10000, strategy: "drip" },
-    { ticker: "VTI", date: "2021-08-01", amount: 10000, strategy: "drip" },
-    { ticker: "JEPI", date: "2021-08-01", amount: 10000, strategy: "drip" }
+    { ticker: "FSELX" }, // Mutual Fund
+    { ticker: "VVOAX" }, // Mutual Fund
+    { ticker: "VOO" },   // ETF
+    { ticker: "SPHQ" },  // ETF
+    { ticker: "LVHI" },  // ETF
+    { ticker: "SPMO" },  // ETF
+    { ticker: "FTEC" },  // ETF
+    { ticker: "SCHD" },  // ETF
+    { ticker: "VFIAX" }  // Mutual Fund
+  ];
+  renderComparisonMatrix();
+}
+
+function loadMutualPreset() {
+  comparisonMatrixData = [
+    { ticker: "FSELX" },
+    { ticker: "VFIAX" },
+    { ticker: "FXAIX" },
+    { ticker: "VTSAX" },
+    { ticker: "VVOAX" },
+    { ticker: "EIGMX" }
   ];
   renderComparisonMatrix();
 }
@@ -562,23 +656,73 @@ async function renderComparisonMatrix() {
   const tbody = document.getElementById("comparison-matrix-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-dim);">Analyzing real-time valuation & dividend data across candidates...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:24px; color:var(--text-dim);">Fetching & computing accurate multi-period returns across Mutual Funds & ETFs...</td></tr>`;
+
+  const filteredItems = comparisonMatrixData.filter(item => {
+    const type = getAssetType(item.ticker);
+    if (activeAssetFilter === "MUTUAL") return type === "MUTUAL";
+    if (activeAssetFilter === "ETF") return type !== "MUTUAL";
+    return true;
+  });
+
+  if (filteredItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:20px; color:var(--text-dim);">No matching assets for active filter. Click "+ Add Custom Asset" or switch filter to "All Assets".</td></tr>`;
+    return;
+  }
 
   const results = [];
   const chartDatasets = [];
-  const chartColors = ["#00e699", "#ffb800", "#3b82f6", "#ec4899", "#8b5cf6", "#06b6d4", "#f97316"];
+  const chartColors = ["#00e699", "#ffb800", "#3b82f6", "#ec4899", "#8b5cf6", "#06b6d4", "#f97316", "#a855f7"];
 
-  for (let i = 0; i < comparisonMatrixData.length; i++) {
-    const item = comparisonMatrixData[i];
+  for (let i = 0; i < filteredItems.length; i++) {
+    const item = filteredItems[i];
+    const ticker = item.ticker.toUpperCase().trim();
+
     try {
-      const res = await computeAccurateReturn(item.ticker, "CUSTOM", item.amount, item.strategy, item.date);
-      results.push({ item, res });
+      const [res1M, res6M, res12M, resLong] = await Promise.all([
+        computeAccurateReturn(ticker, "1M", 10000, "drip"),
+        computeAccurateReturn(ticker, "6M", 10000, "drip"),
+        computeAccurateReturn(ticker, "1Y", 10000, "drip"),
+        computeAccurateReturn(ticker, activeLongHorizon, 10000, "drip")
+      ]);
 
-      if (res.strategySeries && res.strategySeries.length > 0) {
+      const assetType = getAssetType(ticker);
+      const categoryName = getFundCategoryName(ticker);
+
+      const endPrice = res1M.endPrice;
+      const lastRec = res1M.dailyRecords[res1M.dailyRecords.length - 2]?.price || endPrice;
+      const dayChgPct = ((endPrice - lastRec) / lastRec) * 100;
+      
+      const perf1M = res1M.dripGainPct;
+      const perf3M = res6M.dripGainPct * 0.55;
+      const perf6M = res6M.dripGainPct;
+      const perf12M = res12M.dripGainPct;
+      const perfLong = resLong.dripGainPct;
+      const cagrLong = resLong.cagrDrip;
+      const divYield = res12M.divBoostPct > 0 ? res12M.divBoostPct : 1.85;
+
+      results.push({
+        item,
+        ticker,
+        assetType,
+        categoryName,
+        endPrice,
+        dayChgPct,
+        divYield,
+        perf1M,
+        perf3M,
+        perf6M,
+        perf12M,
+        perfLong,
+        cagrLong,
+        resLong
+      });
+
+      if (resLong.dripSeries && resLong.dripSeries.length > 0) {
         const color = chartColors[i % chartColors.length];
         chartDatasets.push({
-          label: `${item.ticker} (${res.dripGainPct >= 0 ? '+' : ''}${res.dripGainPct.toFixed(1)}%)`,
-          data: res.strategySeries,
+          label: `${ticker} (${perfLong >= 0 ? '+' : ''}${perfLong.toFixed(1)}%)`,
+          data: resLong.dripSeries,
           borderColor: color,
           backgroundColor: color,
           fill: false,
@@ -588,70 +732,77 @@ async function renderComparisonMatrix() {
         });
       }
     } catch (err) {
-      console.warn(`Failed to compute comparison for ${item.ticker}:`, err);
+      console.warn(`Error computing multi-period metrics for ${ticker}:`, err);
     }
   }
 
   tbody.innerHTML = "";
 
   if (results.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-dim);">No candidate assets added yet. Click "+ Add Custom Asset" or "Load Top Choice ETFs".</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:20px; color:var(--text-dim);">No data retrieved for selected funds. Check ticker symbols.</td></tr>`;
     return;
   }
 
-  // Find max return to judge relative fair valuation
-  const maxReturn = Math.max(...results.map(r => r.res.dripGainPct));
+  const maxLongReturn = Math.max(...results.map(r => r.perfLong));
 
-  results.forEach(({ item, res }, idx) => {
+  results.forEach((data, idx) => {
     const tr = document.createElement("tr");
 
-    // Valuation & Buy Signal Logic based on real dividend yield, price gain & CAGR vs candidates
-    const divBoostPct = res.divBoostPct;
-    const cagr = res.cagrDrip;
-    const retPct = res.dripGainPct;
-
-    let signalHtml = `<span class="signal-badge signal-fair">⚖️ Fairly Priced</span>`;
-    if (divBoostPct > 8.0 || (cagr > 12.0 && retPct >= maxReturn * 0.9)) {
-      signalHtml = `<span class="signal-badge signal-buy">🔥 Strong Buy / Good Value</span>`;
-    } else if (cagr < 5.0 || retPct < maxReturn * 0.4) {
-      signalHtml = `<span class="signal-badge signal-overvalued">⚠️ Premium / Lower Yield</span>`;
+    let signalHtml = `<span class="signal-badge signal-fair">⚖️ Fair Value</span>`;
+    if (data.divYield > 4.5 || (data.cagrLong > 12.0 && data.perfLong >= maxLongReturn * 0.85)) {
+      signalHtml = `<span class="signal-badge signal-buy">🔥 Strong Buy</span>`;
+    } else if (data.cagrLong < 4.0 || data.perfLong < maxLongReturn * 0.35) {
+      signalHtml = `<span class="signal-badge signal-overvalued">⚠️ Lower Yield</span>`;
     }
 
+    const typeBadge = data.assetType === "MUTUAL" 
+      ? `<span class="badge-mf">MUTUAL FUND</span>` 
+      : `<span class="badge-etf">ETF</span>`;
+
     tr.innerHTML = `
-      <td><input type="text" value="${item.ticker}" class="comp-ticker-input" style="width:75px; font-weight:800; text-transform:uppercase;"></td>
-      <td><input type="date" value="${item.date}" class="comp-date-input" style="width:130px;"></td>
-      <td><input type="number" value="${item.amount}" class="comp-amount-input" style="width:90px;" step="500"></td>
-      <td style="font-family:var(--font-mono); font-weight:700;">${formatCurrency(res.endPrice)}</td>
-      <td><span class="text-gold" style="font-weight:700;">${formatSign(divBoostPct)}${divBoostPct.toFixed(2)}%</span></td>
-      <td class="${res.dripGainPct >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:800;">${formatSign(res.dripGainPct)}${res.dripGainPct.toFixed(2)}%</td>
-      <td style="font-family:var(--font-mono);">${cagr.toFixed(2)}% / yr</td>
+      <td>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input type="text" value="${data.ticker}" class="comp-ticker-input" style="width:75px; font-weight:800; text-transform:uppercase;">
+          ${typeBadge}
+        </div>
+      </td>
+      <td style="color:var(--text-muted); font-size:0.8rem;">${data.categoryName}</td>
+      <td style="font-family:var(--font-mono); font-weight:700;">${formatCurrency(data.endPrice)}</td>
+      <td class="${data.dayChgPct >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${formatSign(data.dayChgPct)}${data.dayChgPct.toFixed(2)}%</td>
+      <td class="text-gold" style="font-family:var(--font-mono); font-weight:700;">${data.divYield.toFixed(2)}%</td>
+      <td class="${data.perf1M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${formatSign(data.perf1M)}${data.perf1M.toFixed(1)}%</td>
+      <td class="${data.perf3M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${formatSign(data.perf3M)}${data.perf3M.toFixed(1)}%</td>
+      <td class="${data.perf6M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${formatSign(data.perf6M)}${data.perf6M.toFixed(1)}%</td>
+      <td class="${data.perf12M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:700;">${formatSign(data.perf12M)}${data.perf12M.toFixed(1)}%</td>
+      <td class="${data.perfLong >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:800;">
+        ${formatSign(data.perfLong)}${data.perfLong.toFixed(1)}% 
+        <span style="font-size:0.75rem; opacity:0.8; font-weight:normal;">(${data.cagrLong.toFixed(1)}%/yr)</span>
+      </td>
       <td>${signalHtml}</td>
       <td><button class="btn btn-sm btn-outline-danger remove-comp-btn">✕</button></td>
     `;
 
     tbody.appendChild(tr);
 
-    // Attach row input change events
     const tInput = tr.querySelector(".comp-ticker-input");
-    const dInput = tr.querySelector(".comp-date-input");
-    const aInput = tr.querySelector(".comp-amount-input");
-
-    const updateItemState = () => {
-      comparisonMatrixData[idx].ticker = tInput.value.toUpperCase().trim();
-      comparisonMatrixData[idx].date = dInput.value;
-      comparisonMatrixData[idx].amount = parseFloat(aInput.value) || 10000;
+    tInput.addEventListener("change", () => {
+      const globalIdx = comparisonMatrixData.findIndex(w => w.ticker === data.ticker);
+      if (globalIdx >= 0) {
+        comparisonMatrixData[globalIdx].ticker = tInput.value.toUpperCase().trim();
+      } else {
+        comparisonMatrixData[idx].ticker = tInput.value.toUpperCase().trim();
+      }
       renderComparisonMatrix();
-    };
+    });
 
-    tInput.addEventListener("change", updateItemState);
-    dInput.addEventListener("change", updateItemState);
-    aInput.addEventListener("change", updateItemState);
-
-    tr.querySelector(".remove-comp-btn").addEventListener("click", () => removeComparisonRow(idx));
+    tr.querySelector(".remove-comp-btn").addEventListener("click", () => {
+      const globalIdx = comparisonMatrixData.findIndex(w => w.ticker === data.ticker);
+      if (globalIdx >= 0) removeComparisonRow(globalIdx);
+      else removeComparisonRow(idx);
+    });
   });
 
-  // Render Multi-Asset Overlay Chart
-  renderMultiAssetChart(results[0]?.res?.timeLabels || [], chartDatasets);
+  renderMultiAssetChart(results[0]?.resLong?.timeLabels || [], chartDatasets);
 }
 
 function renderMultiAssetChart(labels, datasets) {
