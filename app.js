@@ -593,6 +593,34 @@ function initEventListeners() {
       renderComparisonMatrix();
     });
   });
+
+  // Multi-Lot Modal Event Listeners
+  const closeLotsBtn = document.getElementById("close-lots-modal-btn");
+  if (closeLotsBtn) closeLotsBtn.addEventListener("click", closeLotsModal);
+
+  const cancelLotsBtn = document.getElementById("cancel-lots-btn");
+  if (cancelLotsBtn) cancelLotsBtn.addEventListener("click", closeLotsModal);
+
+  const addLotBtn = document.getElementById("add-modal-lot-btn");
+  if (addLotBtn) {
+    addLotBtn.addEventListener("click", () => {
+      const item = comparisonMatrixData.find(w => w.id === activeModalAssetId);
+      if (item) {
+        if (!item.lots) item.lots = [];
+        const lastDate = item.lots.length > 0 ? item.lots[item.lots.length - 1].date : new Date().toISOString().split("T")[0];
+        item.lots.push({ id: `lot_${Date.now()}`, date: lastDate, amount: 1000 });
+        renderModalLotsList(item.lots);
+      }
+    });
+  }
+
+  const saveLotsBtn = document.getElementById("save-lots-btn");
+  if (saveLotsBtn) {
+    saveLotsBtn.addEventListener("click", () => {
+      closeLotsModal();
+      renderComparisonMatrix();
+    });
+  }
 }
 
 // Global Comparison Matrix State & Multi-Asset Chart Instance
@@ -716,6 +744,35 @@ function removeComparisonRow(id) {
   renderComparisonMatrix();
 }
 
+let activeModalAssetId = null;
+
+function getHistoricalPriceOnDate(ticker, dateStr, currentPrice) {
+  const dbAsset = RealMarketDatabase[ticker];
+  if (!dateStr) return currentPrice * 0.5;
+
+  const buyYear = new Date(dateStr).getFullYear();
+  const currentYear = new Date().getFullYear();
+  const yrsAgo = Math.max(0, currentYear - buyYear);
+
+  if (ticker === "NVDA") {
+    if (yrsAgo >= 5) return 13.50;  // 2019-2021 split adjusted
+    if (yrsAgo >= 3) return 21.00;  // 2022
+    if (yrsAgo >= 1) return 48.00;  // 2023
+    return 125.00;                  // 2024+
+  }
+
+  if (dbAsset && dbAsset.historicalPrices) {
+    if (yrsAgo >= 10 && dbAsset.historicalPrices["10Y"]) return dbAsset.historicalPrices["10Y"];
+    if (yrsAgo >= 5 && dbAsset.historicalPrices["5Y"]) return dbAsset.historicalPrices["5Y"];
+    if (yrsAgo >= 3 && dbAsset.historicalPrices["3Y"]) return dbAsset.historicalPrices["3Y"];
+    if (yrsAgo >= 1 && dbAsset.historicalPrices["1Y"]) return dbAsset.historicalPrices["1Y"];
+  }
+
+  const discountRatios = { 0: 1.0, 1: 0.85, 2: 0.72, 3: 0.60, 4: 0.50, 5: 0.40, 10: 0.20 };
+  const ratio = discountRatios[Math.min(10, yrsAgo)] || 0.35;
+  return currentPrice * ratio;
+}
+
 function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = null) {
   const ticker = (item.ticker || "").toUpperCase().trim();
 
@@ -726,14 +783,13 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
       assetType: "CUSTOM",
       categoryName: "Enter Ticker Symbol",
       endPrice: 0,
-      dayChgPct: 0,
-      divYield: 0,
-      perf1M: 0,
-      perf3M: 0,
-      perf6M: 0,
-      perf12M: 0,
+      totalInvested: 0,
+      currentValue: 0,
+      totalProfit: 0,
+      totalProfitPct: 0,
+      cagrIrr: 0,
+      lotCount: 0,
       perfSelected: 0,
-      cagrSelected: 0,
       dripSeries: [],
       timeLabels: []
     };
@@ -746,45 +802,39 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
   const endPrice = fallback.currentPrice || 100;
   const pricePoints = fallback.pricePoints || [];
 
-  let dayChgPct = 0.35;
-  if (pricePoints.length >= 2) {
-    const prevPrice = pricePoints[pricePoints.length - 2].price;
-    dayChgPct = prevPrice ? ((endPrice - prevPrice) / prevPrice) * 100 : 0.35;
-  }
-
   const dbAsset = RealMarketDatabase[ticker];
   const divYield = dbAsset ? (dbAsset.annualDivRate / dbAsset.currentPrice) * 100 : (assetType === "MUTUAL" ? 2.85 : 1.95);
 
-  function getReturnForHorizon(hKey) {
-    if (dbAsset && dbAsset.historicalPrices && dbAsset.historicalPrices[hKey]) {
-      const startP = dbAsset.historicalPrices[hKey];
-      return ((endPrice - startP) / startP) * 100;
-    }
-    const returnRatios = { "1M": 1.2, "3M": 3.8, "6M": 7.4, "YTD": 9.2, "1Y": 14.5, "3Y": 38.2, "5Y": 65.4, "10Y": 145.0, "MAX": 320.0 };
-    const baseRet = returnRatios[hKey] || 15.0;
-    let hash = 0;
-    for (let c = 0; c < ticker.length; c++) hash += ticker.charCodeAt(c);
-    const variance = (hash % 14) - 7;
-    return baseRet + variance;
+  let lots = item.lots;
+  if (!lots || lots.length === 0) {
+    const fiveYrsAgo = new Date();
+    fiveYrsAgo.setFullYear(fiveYrsAgo.getFullYear() - 5);
+    lots = [{ id: "lot_default", date: fiveYrsAgo.toISOString().split("T")[0], amount: 10000 }];
+    item.lots = lots;
   }
 
-  const perf1M = getReturnForHorizon("1M");
-  const perf3M = getReturnForHorizon("3M");
-  const perf6M = getReturnForHorizon("6M");
-  const perf12M = getReturnForHorizon("1Y");
+  let totalInvested = 0;
+  let totalShares = 0;
 
-  let perfSelected = perf12M;
-  let cagrSelected = perf12M;
+  lots.forEach(lot => {
+    const amt = parseFloat(lot.amount) || 0;
+    totalInvested += amt;
+    const buyPrice = getHistoricalPriceOnDate(ticker, lot.date, endPrice);
+    const sharesBought = buyPrice > 0 ? amt / buyPrice : 0;
+    totalShares += sharesBought;
+  });
 
-  if (horizonKey === "CUSTOM") {
-    perfSelected = getReturnForHorizon("1Y");
-    cagrSelected = perfSelected;
-  } else {
-    perfSelected = getReturnForHorizon(horizonKey);
-    const horizonYearsMap = { "1M": 1/12, "3M": 3/12, "6M": 0.5, "YTD": 0.6, "1Y": 1, "3Y": 3, "5Y": 5, "10Y": 10, "MAX": 15 };
-    const yrs = horizonYearsMap[horizonKey] || 5;
-    cagrSelected = yrs > 1 ? (Math.pow(1 + perfSelected / 100, 1 / yrs) - 1) * 100 : perfSelected;
-  }
+  const divBoostFactor = 1 + (divYield / 100) * 2.2;
+  const currentValue = totalShares * endPrice * divBoostFactor;
+  const totalProfit = currentValue - totalInvested;
+  const totalProfitPct = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+
+  const earliestDate = lots.reduce((min, l) => l.date < min ? l.date : min, lots[0].date || "2021-01-01");
+  const yrsElapsed = Math.max(0.2, (new Date() - new Date(earliestDate)) / (1000 * 60 * 60 * 24 * 365.25));
+  
+  const cagrIrr = totalInvested > 0 && currentValue > 0
+    ? (Math.pow(currentValue / totalInvested, 1 / yrsElapsed) - 1) * 100
+    : 0;
 
   const dripSeries = pricePoints.map(p => p.price);
   const timeLabels = pricePoints.map(p => p.dateLabel);
@@ -795,17 +845,85 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
     assetType,
     categoryName,
     endPrice,
-    dayChgPct,
     divYield,
-    perf1M,
-    perf3M,
-    perf6M,
-    perf12M,
-    perfSelected,
-    cagrSelected,
+    totalInvested,
+    currentValue,
+    totalProfit,
+    totalProfitPct,
+    cagrIrr,
+    lotCount: lots.length,
+    perfSelected: totalProfitPct,
     dripSeries,
     timeLabels
   };
+}
+
+function openLotsModal(assetId) {
+  const item = comparisonMatrixData.find(w => w.id === assetId);
+  if (!item) return;
+
+  activeModalAssetId = assetId;
+  const ticker = item.ticker || "Asset";
+
+  const titleEl = document.getElementById("modal-asset-title");
+  if (titleEl) titleEl.textContent = `⚙️ Configure Investment Lots - ${ticker}`;
+
+  if (!item.lots || item.lots.length === 0) {
+    const defaultDate = new Date();
+    defaultDate.setFullYear(defaultDate.getFullYear() - 3);
+    item.lots = [{ id: `lot_${Date.now()}`, date: defaultDate.toISOString().split("T")[0], amount: 5000 }];
+  }
+
+  renderModalLotsList(item.lots);
+
+  const modal = document.getElementById("asset-lots-modal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+function renderModalLotsList(lots) {
+  const container = document.getElementById("modal-lots-list");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  lots.forEach((lot, index) => {
+    const row = document.createElement("div");
+    row.className = "lot-row";
+    row.innerHTML = `
+      <span style="font-size:0.8rem; font-weight:800; color:var(--primary-accent); min-width:55px;">Lot #${index + 1}</span>
+      <div style="display:flex; flex-direction:column; gap:2px; flex:1;">
+        <label>Purchase Date:</label>
+        <input type="date" class="lot-date-input" value="${lot.date || ''}">
+      </div>
+      <div style="display:flex; flex-direction:column; gap:2px; flex:1;">
+        <label>Invested ($):</label>
+        <input type="number" class="lot-amount-input" value="${lot.amount || 0}" step="100" min="1">
+      </div>
+      ${lots.length > 1 ? `<button class="btn btn-sm btn-outline-danger delete-lot-btn" style="margin-top:14px; padding: 4px 8px;">✕</button>` : ''}
+    `;
+
+    container.appendChild(row);
+
+    const dInput = row.querySelector(".lot-date-input");
+    const aInput = row.querySelector(".lot-amount-input");
+
+    dInput.addEventListener("change", () => lot.date = dInput.value);
+    aInput.addEventListener("change", () => lot.amount = parseFloat(aInput.value) || 0);
+
+    const delBtn = row.querySelector(".delete-lot-btn");
+    if (delBtn) {
+      delBtn.addEventListener("click", () => {
+        lots.splice(index, 1);
+        renderModalLotsList(lots);
+      });
+    }
+  });
+}
+
+function closeLotsModal() {
+  const modal = document.getElementById("asset-lots-modal");
+  if (modal) modal.classList.add("hidden");
+  activeModalAssetId = null;
 }
 
 function renderComparisonMatrix(focusId = null) {
@@ -841,9 +959,9 @@ function renderComparisonMatrix(focusId = null) {
     let signalHtml = `<span class="signal-badge signal-fair">⚖️ Fair Value</span>`;
     if (!data.ticker) {
       signalHtml = `<span class="signal-badge signal-fair">✏️ Type Ticker</span>`;
-    } else if (data.divYield > 4.2 || (data.cagrSelected > 12.0 && data.perfSelected >= maxReturn * 0.85)) {
+    } else if (data.divYield > 4.2 || (data.cagrIrr > 12.0 && data.perfSelected >= maxReturn * 0.85)) {
       signalHtml = `<span class="signal-badge signal-buy">🔥 Strong Buy</span>`;
-    } else if (data.cagrSelected < 4.0 || data.perfSelected < maxReturn * 0.35) {
+    } else if (data.cagrIrr < 4.0 || data.perfSelected < maxReturn * 0.35) {
       signalHtml = `<span class="signal-badge signal-overvalued">⚠️ Lower Yield</span>`;
     }
 
@@ -864,19 +982,24 @@ function renderComparisonMatrix(focusId = null) {
         </div>
       </td>
       <td style="color:var(--text-muted); font-size:0.8rem;">${data.categoryName}</td>
-      <td style="font-family:var(--font-mono); font-weight:700;">${data.endPrice ? formatCurrency(data.endPrice) : '--'}</td>
-      <td class="${data.dayChgPct >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${data.ticker ? formatSign(data.dayChgPct) + data.dayChgPct.toFixed(2) + '%' : '--'}</td>
-      <td class="text-gold" style="font-family:var(--font-mono); font-weight:700;">${data.ticker ? data.divYield.toFixed(2) + '%' : '--'}</td>
-      <td class="${data.perf1M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${data.ticker ? formatSign(data.perf1M) + data.perf1M.toFixed(1) + '%' : '--'}</td>
-      <td class="${data.perf3M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${data.ticker ? formatSign(data.perf3M) + data.perf3M.toFixed(1) + '%' : '--'}</td>
-      <td class="${data.perf6M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);">${data.ticker ? formatSign(data.perf6M) + data.perf6M.toFixed(1) + '%' : '--'}</td>
-      <td class="${data.perf12M >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:700;">${data.ticker ? formatSign(data.perf12M) + data.perf12M.toFixed(1) + '%' : '--'}</td>
-      <td class="${data.perfSelected >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:800;">
-        ${data.ticker ? formatSign(data.perfSelected) + data.perfSelected.toFixed(1) + '%' : '--'} 
-        ${data.ticker ? `<span style="font-size:0.75rem; opacity:0.8; font-weight:normal;">(${data.cagrSelected.toFixed(1)}%/yr)</span>` : ''}
+      <td style="font-family:var(--font-mono); font-weight:700;">${data.ticker ? formatCurrency(data.totalInvested) : '--'}</td>
+      <td style="font-family:var(--font-mono); font-weight:700; color: #ffffff;">${data.ticker ? formatCurrency(data.currentValue) : '--'}</td>
+      <td class="${data.totalProfit >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:700;">
+        ${data.ticker ? formatSign(data.totalProfit) + formatCurrency(data.totalProfit) : '--'}
+        ${data.ticker ? `<br><span style="font-size:0.75rem; opacity:0.85;">(${formatSign(data.totalProfitPct)}${data.totalProfitPct.toFixed(1)}%)</span>` : ''}
+      </td>
+      <td class="${data.cagrIrr >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:800;">
+        ${data.ticker ? formatSign(data.cagrIrr) + data.cagrIrr.toFixed(1) + '% / yr' : '--'}
       </td>
       <td>${signalHtml}</td>
-      <td><button class="btn btn-sm btn-outline-danger remove-comp-btn" title="Remove Asset">✕</button></td>
+      <td>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="btn btn-sm btn-secondary configure-lots-btn" style="padding:4px 8px; font-size:0.75rem;" title="Configure Purchase Dates & Contributions">
+            ⚙️ Buys (${data.lotCount})
+          </button>
+          <button class="btn btn-sm btn-outline-danger remove-comp-btn" title="Remove Asset">✕</button>
+        </div>
+      </td>
     `;
 
     tbody.appendChild(tr);
@@ -889,6 +1012,11 @@ function renderComparisonMatrix(focusId = null) {
       }
       renderComparisonMatrix();
     });
+
+    const lotsBtn = tr.querySelector(".configure-lots-btn");
+    if (lotsBtn) {
+      lotsBtn.addEventListener("click", () => openLotsModal(data.item.id));
+    }
 
     tr.querySelector(".remove-comp-btn").addEventListener("click", () => {
       removeComparisonRow(data.item.id);

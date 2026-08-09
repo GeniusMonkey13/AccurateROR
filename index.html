@@ -269,17 +269,13 @@
             <thead>
               <tr>
                 <th>Symbol & Asset</th>
-                <th>Fund Category</th>
-                <th>Current Price</th>
-                <th>1-Day Chg %</th>
-                <th>Dist Yield %</th>
-                <th>Perf 1M</th>
-                <th>Perf 3M</th>
-                <th>Perf 6M</th>
-                <th>Perf 12M</th>
-                <th id="long-term-header-label">Perf 5Y (CAGR)</th>
+                <th>Category</th>
+                <th>Total Invested ($)</th>
+                <th>Current Value ($)</th>
+                <th>Total Profit ($ / %)</th>
+                <th id="long-term-header-label">Money-Weighted IRR (5Y)</th>
                 <th>Fair Value & Signal</th>
-                <th>Action</th>
+                <th>Buys & Lots</th>
               </tr>
             </thead>
             <tbody id="comparison-matrix-tbody">
@@ -504,6 +500,34 @@
     <footer class="app-footer">
       <p>AccurateROR &copy; 2026 &bull; True Rate of Return Engine &bull; Linked with <a href="https://github.com/GeniusMonkey13/AccurateROR" target="_blank">GeniusMonkey13/AccurateROR</a></p>
     </footer>
+  </div>
+
+  <!-- Multi-Lot Purchase & Additional Contribution Lot Drawer Modal -->
+  <div id="asset-lots-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-asset-title">⚙️ Configure Investment Lots - Ticker</h3>
+        <button id="close-lots-modal-btn" class="btn-close" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">
+          Set initial purchase date & amount, plus any additional contribution lots over time. The calculator accurately tracks split-adjusted share accumulation, total cost basis, dividend reinvestments, and Money-Weighted Return (IRR).
+        </p>
+
+        <div id="modal-lots-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px; max-height:280px; overflow-y:auto;">
+          <!-- Dynamically populated purchase lot rows -->
+        </div>
+
+        <button id="add-modal-lot-btn" class="btn btn-secondary btn-sm" style="display:flex; align-items:center; gap:6px;">
+          <span>+ Add Additional Investment Lot</span>
+        </button>
+      </div>
+
+      <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--border-color); padding-top:14px;">
+        <button id="cancel-lots-btn" class="btn btn-outline" style="padding:6px 14px; font-size:0.85rem;">Cancel</button>
+        <button id="save-lots-btn" class="btn btn-primary" style="padding:6px 18px; font-size:0.85rem;">Save & Recalculate</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
