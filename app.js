@@ -154,26 +154,31 @@ function generateFallbackAsset(symbol) {
   const isBond = sym.includes("BND") || sym.includes("AGG") || sym.includes("BOND") || sym.includes("BIL") || sym.includes("TLT");
   const isMutual = sym.length === 5 && sym.endsWith("X");
 
+  // Character hash seed to make fallback figures distinct per ticker
+  const hash = sym.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const priceBase = isBond ? (70 + (hash % 15)) : (100 + (hash % 90));
+  const yieldBase = isBond ? (2.5 + (hash % 10) * 0.1) : (1.2 + (hash % 15) * 0.2);
+
   return {
-    name: `${sym} ${isBond ? 'Bond Fund' : (isMutual ? 'Mutual Fund' : 'ETF Asset')}`,
+    name: `${sym} ${isBond ? 'Bond Fund' : (isMutual ? 'Mutual Fund' : 'Asset')}`,
     ticker: sym,
-    currentPrice: isBond ? 75.00 : 120.00,
-    annualDivRate: isBond ? 2.80 : 2.20,
+    currentPrice: parseFloat(priceBase.toFixed(2)),
+    annualDivRate: parseFloat(((priceBase * yieldBase) / 100).toFixed(2)),
     divFrequency: isBond ? 12 : 4,
-    expRatio: isBond ? 0.03 : (isMutual ? 0.65 : 0.08),
-    vol: isBond ? 5.2 : (isMutual ? 14.5 : 18.2),
-    maxDd: isBond ? -14.0 : -18.5,
+    expRatio: isBond ? 0.03 : (isMutual ? 0.55 + (hash % 20) * 0.02 : 0.05 + (hash % 15) * 0.01),
+    vol: isBond ? 4.8 + (hash % 10) * 0.1 : (isMutual ? 13.5 + (hash % 20) * 0.3 : 15.0 + (hash % 25) * 0.5),
+    maxDd: isBond ? -12.0 - (hash % 5) : -15.0 - (hash % 20),
     historicalPrices: {
-      "1W": isBond ? 74.80 : 119.20,
-      "2W": isBond ? 74.50 : 118.10,
-      "1M": isBond ? 74.00 : 116.80,
-      "3M": isBond ? 73.20 : 112.50,
-      "6M": isBond ? 72.10 : 105.20,
-      "YTD": isBond ? 72.50 : 108.40,
-      "1Y": isBond ? 71.00 : 98.50,
-      "3Y": isBond ? 71.80 : 82.40,
-      "5Y": isBond ? 68.20 : 58.60,
-      "MAX": isBond ? 60.00 : 22.00
+      "1W": parseFloat((priceBase * 0.998).toFixed(2)),
+      "2W": parseFloat((priceBase * 0.992).toFixed(2)),
+      "1M": parseFloat((priceBase * 0.985).toFixed(2)),
+      "3M": parseFloat((priceBase * 0.950).toFixed(2)),
+      "6M": parseFloat((priceBase * 0.900).toFixed(2)),
+      "YTD": parseFloat((priceBase * 0.920).toFixed(2)),
+      "1Y": parseFloat((priceBase * 0.840).toFixed(2)),
+      "3Y": parseFloat((priceBase * 0.700).toFixed(2)),
+      "5Y": parseFloat((priceBase * 0.520).toFixed(2)),
+      "MAX": parseFloat((priceBase * 0.220).toFixed(2))
     }
   };
 }
