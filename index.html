@@ -289,23 +289,37 @@
           </div>
         </div>
 
-        <!-- Interactive Comparison Matrix Table -->
-        <div class="comparison-table-wrapper">
-          <table class="comparison-matrix-table">
+        <!-- Interactive Sortable Multi-Period Comparison Matrix Table -->
+        <div class="comparison-table-wrapper" style="overflow-x: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px;">
+            <span style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">
+              💡 Click any header (1W, 2W, 1M, 3M, 6M, 1Y, 3Y, 5Y, Exp Ratio, Volatility, Max DD) to sort assets.
+            </span>
+            <span id="matrix-timestamp-badge" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary-accent); background: rgba(0,230,153,0.1); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-weight: 700;">
+              🟢 Live Market Engine • As of Aug 9, 2026, 17:40 EDT
+            </span>
+          </div>
+          <table class="comparison-matrix-table sortable-matrix" id="matrix-main-table">
             <thead>
-              <tr>
-                <th>Symbol & Asset</th>
-                <th>Category</th>
-                <th>Total Invested ($)</th>
-                <th>Current Value ($)</th>
-                <th>Total Profit ($ / %)</th>
-                <th id="long-term-header-label">Money-Weighted IRR (5Y)</th>
-                <th>Fair Value & Signal</th>
-                <th>Buys & Lots</th>
+              <tr style="user-select: none;">
+                <th data-sort="ticker" class="sortable-th cursor-pointer" title="Sort by Symbol">Symbol & Asset ↕</th>
+                <th data-sort="expRatio" class="sortable-th cursor-pointer" title="Sort by Expense Ratio">Exp Ratio ↕</th>
+                <th data-sort="p1w" class="sortable-th cursor-pointer" title="Sort by 1-Week Return">1W % ↕</th>
+                <th data-sort="p2w" class="sortable-th cursor-pointer" title="Sort by 2-Week Return">2W % ↕</th>
+                <th data-sort="p1m" class="sortable-th cursor-pointer" title="Sort by 1-Month Return">1M % ↕</th>
+                <th data-sort="p3m" class="sortable-th cursor-pointer" title="Sort by 3-Month Return">3M % ↕</th>
+                <th data-sort="p6m" class="sortable-th cursor-pointer" title="Sort by 6-Month Return">6M % ↕</th>
+                <th data-sort="p1y" class="sortable-th cursor-pointer" title="Sort by 1-Year Return">1Y % ↕</th>
+                <th data-sort="p3y" class="sortable-th cursor-pointer" title="Sort by 3-Year Annualized Return">3Y (CAGR) ↕</th>
+                <th data-sort="p5y" class="sortable-th cursor-pointer" title="Sort by 5-Year Annualized Return">5Y (CAGR) ↕</th>
+                <th data-sort="vol" class="sortable-th cursor-pointer" title="Sort by Volatility">Volatility ↕</th>
+                <th data-sort="maxDd" class="sortable-th cursor-pointer" title="Sort by Max Drawdown">Max DD ↕</th>
+                <th data-sort="valScore" class="sortable-th cursor-pointer" title="Sort by Transparent Fair Value Signal">Valuation Signal ↕</th>
+                <th>Buys & Actions</th>
               </tr>
             </thead>
             <tbody id="comparison-matrix-tbody">
-              <!-- Dynamically populated portfolio comparison rows -->
+              <!-- Dynamically populated sortable multi-period portfolio rows -->
             </tbody>
           </table>
         </div>
@@ -330,15 +344,19 @@
 
       <!-- Custom Watchlist & Portfolio Customizer Section -->
       <section class="card watchlist-card">
-        <div class="card-header">
+        <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
           <div>
             <h3>Your Custom Portfolio Watchlist & Holdings</h3>
-            <p class="subtitle">Customize multi-asset holdings with custom purchase dates, shares, and dollar amounts</p>
+            <p class="subtitle">Add and track custom holdings (e.g. BND, VOO, SCHD) with custom purchase dates, shares, and dollar amounts</p>
           </div>
-          <button id="add-to-watchlist-btn" class="btn btn-secondary btn-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Add Current Holding
-          </button>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <input type="text" id="wl-quick-ticker" placeholder="Ticker (e.g. BND, VOO)..." style="width: 120px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.4); color: #fff; font-weight: 700; text-transform: uppercase; font-size: 0.82rem;" />
+            <input type="date" id="wl-quick-date" style="padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem;" />
+            <input type="number" id="wl-quick-amount" placeholder="Amount ($)" value="10000" step="500" style="width: 100px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; font-family: var(--font-mono);" />
+            <button id="add-to-watchlist-btn" class="btn btn-primary btn-sm" style="padding: 6px 14px;">
+              + Add Current Holding
+            </button>
+          </div>
         </div>
         <div id="watchlist-container" class="watchlist-grid">
           <!-- Dynamically populated watchlist items -->

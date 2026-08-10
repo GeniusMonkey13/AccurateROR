@@ -661,6 +661,26 @@ select option, .custom-select option, .date-select option {
   font-weight: 800;
 }
 
+.sortable-th {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sortable-th:hover {
+  color: var(--primary-accent) !important;
+  background: rgba(0, 230, 153, 0.08);
+}
+
+.sortable-th.sorted-asc::after {
+  content: " ▲";
+  color: var(--primary-accent);
+}
+
+.sortable-th.sorted-desc::after {
+  content: " ▼";
+  color: var(--primary-accent);
+}
+
 .badge-mf {
   background: rgba(139, 92, 246, 0.25);
   border: 1px solid #8b5cf6;

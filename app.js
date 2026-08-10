@@ -22,96 +22,13 @@ const RealMarketDatabase = {
     name: "SPDR S&P 500 ETF Trust",
     ticker: "SPY",
     currentPrice: 552.40,
-    annualDivRate: 6.95, // ~$6.95/yr dividend per share (~1.26% yield)
-    divFrequency: 4, // Quarterly
-    historicalPrices: {
-      "1M": 546.10,
-      "6M": 498.20,
-      "YTD": 474.96,
-      "1Y": 458.10,
-      "3Y": 412.50,
-      "5Y": 326.80,
-      "MAX": 128.40
-    }
-  },
-  SCHD: {
-    name: "Schwab U.S. Dividend Equity ETF",
-    ticker: "SCHD",
-    currentPrice: 82.90,
-    annualDivRate: 2.82, // ~$2.82/yr per share (~3.40% yield)
+    annualDivRate: 6.95,
     divFrequency: 4,
+    expRatio: 0.09,
+    vol: 12.5,
+    maxDd: -18.2,
     historicalPrices: {
-      "1M": 81.20,
-      "6M": 76.40,
-      "YTD": 76.10,
-      "1Y": 74.80,
-      "3Y": 75.20,
-      "5Y": 54.10,
-      "MAX": 38.50
-    }
-  },
-  AAPL: {
-    name: "Apple Inc.",
-    ticker: "AAPL",
-    currentPrice: 228.50,
-    annualDivRate: 1.00, // ~$1.00/yr per share
-    divFrequency: 4,
-    historicalPrices: {
-      "1M": 221.10,
-      "6M": 182.40,
-      "YTD": 185.60,
-      "1Y": 196.45,
-      "3Y": 145.80,
-      "5Y": 96.40,
-      "MAX": 22.10
-    }
-  },
-  O: {
-    name: "Realty Income Corporation",
-    ticker: "O",
-    currentPrice: 59.80,
-    annualDivRate: 3.16, // ~$3.16/yr per share (~5.28% yield, monthly)
-    divFrequency: 12,
-    historicalPrices: {
-      "1M": 56.40,
-      "6M": 52.80,
-      "YTD": 53.20,
-      "1Y": 61.20,
-      "3Y": 71.40,
-      "5Y": 60.10,
-      "MAX": 42.10
-    }
-  },
-  MSFT: {
-    name: "Microsoft Corporation",
-    ticker: "MSFT",
-    currentPrice: 425.20,
-    annualDivRate: 3.00, // ~$3.00/yr per share
-    divFrequency: 4,
-    historicalPrices: {
-      "1M": 418.20,
-      "6M": 398.10,
-      "YTD": 370.80,
-      "1Y": 335.20,
-      "3Y": 285.90,
-      "5Y": 136.20,
-      "MAX": 45.30
-    }
-  },
-  QQQ: {
-    name: "Invesco QQQ Trust (Nasdaq 100)",
-    ticker: "QQQ",
-    currentPrice: 485.60,
-    annualDivRate: 2.98,
-    divFrequency: 4,
-    historicalPrices: {
-      "1M": 468.10,
-      "6M": 420.50,
-      "YTD": 408.20,
-      "1Y": 375.40,
-      "3Y": 365.10,
-      "5Y": 182.40,
-      "MAX": 112.10
+      "1W": 548.10, "2W": 544.20, "1M": 546.10, "3M": 522.40, "6M": 498.20, "YTD": 474.96, "1Y": 458.10, "3Y": 412.50, "5Y": 326.80, "MAX": 128.40
     }
   },
   VOO: {
@@ -120,14 +37,63 @@ const RealMarketDatabase = {
     currentPrice: 508.10,
     annualDivRate: 6.42,
     divFrequency: 4,
+    expRatio: 0.03,
+    vol: 12.4,
+    maxDd: -18.1,
     historicalPrices: {
-      "1M": 502.10,
-      "6M": 458.20,
-      "YTD": 436.50,
-      "1Y": 421.10,
-      "3Y": 378.40,
-      "5Y": 300.20,
-      "MAX": 118.20
+      "1W": 504.20, "2W": 500.50, "1M": 502.10, "3M": 480.20, "6M": 458.20, "YTD": 436.50, "1Y": 421.10, "3Y": 378.40, "5Y": 300.20, "MAX": 118.20
+    }
+  },
+  BND: {
+    name: "Vanguard Total Bond Market ETF",
+    ticker: "BND",
+    currentPrice: 72.80,
+    annualDivRate: 2.52,
+    divFrequency: 12,
+    expRatio: 0.03,
+    vol: 5.2,
+    maxDd: -14.1,
+    historicalPrices: {
+      "1W": 72.60, "2W": 72.40, "1M": 72.10, "3M": 71.50, "6M": 70.60, "YTD": 71.20, "1Y": 69.50, "3Y": 70.20, "5Y": 67.50, "MAX": 62.10
+    }
+  },
+  AGG: {
+    name: "iShares Core U.S. Aggregate Bond ETF",
+    ticker: "AGG",
+    currentPrice: 98.20,
+    annualDivRate: 3.35,
+    divFrequency: 12,
+    expRatio: 0.03,
+    vol: 5.1,
+    maxDd: -14.2,
+    historicalPrices: {
+      "1W": 98.00, "2W": 97.70, "1M": 97.40, "3M": 96.80, "6M": 95.20, "YTD": 96.00, "1Y": 93.80, "3Y": 95.10, "5Y": 91.20, "MAX": 82.50
+    }
+  },
+  SCHD: {
+    name: "Schwab U.S. Dividend Equity ETF",
+    ticker: "SCHD",
+    currentPrice: 82.90,
+    annualDivRate: 2.82,
+    divFrequency: 4,
+    expRatio: 0.06,
+    vol: 13.8,
+    maxDd: -16.5,
+    historicalPrices: {
+      "1W": 82.40, "2W": 82.00, "1M": 81.20, "3M": 78.50, "6M": 76.40, "YTD": 76.10, "1Y": 74.80, "3Y": 75.20, "5Y": 54.10, "MAX": 38.50
+    }
+  },
+  QQQ: {
+    name: "Invesco QQQ Trust (Nasdaq 100)",
+    ticker: "QQQ",
+    currentPrice: 485.60,
+    annualDivRate: 2.98,
+    divFrequency: 4,
+    expRatio: 0.20,
+    vol: 18.2,
+    maxDd: -28.4,
+    historicalPrices: {
+      "1W": 479.20, "2W": 472.50, "1M": 468.10, "3M": 445.20, "6M": 420.50, "YTD": 408.20, "1Y": 375.40, "3Y": 365.10, "5Y": 182.40, "MAX": 112.10
     }
   },
   NVDA: {
@@ -136,30 +102,37 @@ const RealMarketDatabase = {
     currentPrice: 118.40,
     annualDivRate: 0.16,
     divFrequency: 4,
+    expRatio: 0.00,
+    vol: 38.5,
+    maxDd: -32.4,
     historicalPrices: {
-      "1M": 124.50,
-      "6M": 62.10,
-      "YTD": 49.50,
-      "1Y": 46.80,
-      "3Y": 19.80,
-      "5Y": 4.10,
-      "MAX": 0.85
+      "1W": 114.20, "2W": 110.50, "1M": 105.00, "3M": 92.10, "6M": 62.10, "YTD": 49.50, "1Y": 46.80, "3Y": 19.80, "5Y": 4.10, "MAX": 0.85
     }
   },
-  JEPI: {
-    name: "JPMorgan Equity Premium Income ETF",
-    ticker: "JEPI",
-    currentPrice: 57.80,
-    annualDivRate: 4.35, // ~7.5% yield monthly
-    divFrequency: 12,
+  AAPL: {
+    name: "Apple Inc.",
+    ticker: "AAPL",
+    currentPrice: 228.50,
+    annualDivRate: 1.00,
+    divFrequency: 4,
+    expRatio: 0.00,
+    vol: 19.2,
+    maxDd: -22.1,
     historicalPrices: {
-      "1M": 56.90,
-      "6M": 54.80,
-      "YTD": 54.50,
-      "1Y": 54.10,
-      "3Y": 55.40,
-      "5Y": 50.10,
-      "MAX": 50.00
+      "1W": 226.10, "2W": 223.80, "1M": 221.10, "3M": 208.50, "6M": 182.40, "YTD": 185.60, "1Y": 196.45, "3Y": 145.80, "5Y": 96.40, "MAX": 22.10
+    }
+  },
+  FSELX: {
+    name: "Fidelity Select Semiconductors",
+    ticker: "FSELX",
+    currentPrice: 235.10,
+    annualDivRate: 3.20,
+    divFrequency: 1,
+    expRatio: 0.68,
+    vol: 28.4,
+    maxDd: -30.2,
+    historicalPrices: {
+      "1W": 230.20, "2W": 225.10, "1M": 217.20, "3M": 198.50, "6M": 170.10, "YTD": 162.40, "1Y": 154.50, "3Y": 116.20, "5Y": 68.40, "MAX": 18.20
     }
   }
 };
@@ -177,13 +150,31 @@ function updateLiveStatus(text, statusClass) {
 }
 
 function generateFallbackAsset(symbol) {
+  const sym = symbol.toUpperCase().trim();
+  const isBond = sym.includes("BND") || sym.includes("AGG") || sym.includes("BOND") || sym.includes("BIL") || sym.includes("TLT");
+  const isMutual = sym.length === 5 && sym.endsWith("X");
+
   return {
-    name: `${symbol.toUpperCase()} Asset`,
-    ticker: symbol.toUpperCase(),
-    currentPrice: 100.00,
-    annualDivRate: 2.00,
-    divFrequency: 4,
-    historicalPrices: { "1M": 98, "6M": 92, "YTD": 90, "1Y": 85, "3Y": 70, "5Y": 50, "MAX": 25 }
+    name: `${sym} ${isBond ? 'Bond Fund' : (isMutual ? 'Mutual Fund' : 'ETF Asset')}`,
+    ticker: sym,
+    currentPrice: isBond ? 75.00 : 120.00,
+    annualDivRate: isBond ? 2.80 : 2.20,
+    divFrequency: isBond ? 12 : 4,
+    expRatio: isBond ? 0.03 : (isMutual ? 0.65 : 0.08),
+    vol: isBond ? 5.2 : (isMutual ? 14.5 : 18.2),
+    maxDd: isBond ? -14.0 : -18.5,
+    historicalPrices: {
+      "1W": isBond ? 74.80 : 119.20,
+      "2W": isBond ? 74.50 : 118.10,
+      "1M": isBond ? 74.00 : 116.80,
+      "3M": isBond ? 73.20 : 112.50,
+      "6M": isBond ? 72.10 : 105.20,
+      "YTD": isBond ? 72.50 : 108.40,
+      "1Y": isBond ? 71.00 : 98.50,
+      "3Y": isBond ? 71.80 : 82.40,
+      "5Y": isBond ? 68.20 : 58.60,
+      "MAX": isBond ? 60.00 : 22.00
+    }
   };
 }
 
@@ -650,6 +641,29 @@ function initEventListeners() {
       renderComparisonMatrix();
     });
   }
+
+  // Sortable Table Headers
+  document.querySelectorAll(".sortable-th").forEach(th => {
+    th.addEventListener("click", (e) => {
+      const col = e.target.closest("th").dataset.sort;
+      if (!col) return;
+      if (col === matrixSortCol) {
+        matrixSortAsc = !matrixSortAsc;
+      } else {
+        matrixSortCol = col;
+        matrixSortAsc = false;
+      }
+
+      document.querySelectorAll(".sortable-th").forEach(header => {
+        header.classList.remove("sorted-asc", "sorted-desc");
+        if (header.dataset.sort === matrixSortCol) {
+          header.classList.add(matrixSortAsc ? "sorted-asc" : "sorted-desc");
+        }
+      });
+
+      renderComparisonMatrix();
+    });
+  });
 }
 
 // Global Comparison Matrix State & Multi-Asset Chart Instance
@@ -673,6 +687,8 @@ let matrixDcaAmount = 250;
 let matrixDcaFrequency = "BIWEEKLY";
 let matrixCustomStartDate = "";
 let matrixCustomEndDate = "";
+let matrixSortCol = "valScore"; // Default sort by transparent valuation score
+let matrixSortAsc = false;      // Descending order by default
 let multiAssetChartInstance = null;
 
 const FundCategoryMap = {
@@ -806,6 +822,32 @@ function getHistoricalPriceOnDate(ticker, dateStr, currentPrice) {
   return currentPrice * ratio;
 }
 
+function getPeriodReturnPct(ticker, horizon, endPrice) {
+  const dbAsset = RealMarketDatabase[ticker];
+  if (!dbAsset) {
+    const fallback = generateFallbackAsset(ticker);
+    const pMap = fallback.historicalPrices || {};
+    const startP = pMap[horizon] || (endPrice * 0.85);
+    const rawRet = ((endPrice - startP) / startP) * 100;
+    if (horizon === "3Y") return (Math.pow(endPrice / startP, 1 / 3) - 1) * 100;
+    if (horizon === "5Y") return (Math.pow(endPrice / startP, 1 / 5) - 1) * 100;
+    return rawRet;
+  }
+
+  const pMap = dbAsset.historicalPrices || {};
+  let startP = pMap[horizon];
+  if (!startP) {
+    if (horizon === "1W") startP = endPrice / 1.006;
+    else if (horizon === "2W") startP = endPrice / 1.012;
+    else startP = endPrice * 0.85;
+  }
+
+  const rawRet = ((endPrice - startP) / startP) * 100;
+  if (horizon === "3Y") return (Math.pow(endPrice / startP, 1 / 3) - 1) * 100;
+  if (horizon === "5Y") return (Math.pow(endPrice / startP, 1 / 5) - 1) * 100;
+  return rawRet;
+}
+
 function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = null) {
   const ticker = (item.ticker || "").toUpperCase().trim();
 
@@ -815,28 +857,33 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
       ticker: "",
       assetType: "CUSTOM",
       categoryName: "Enter Ticker Symbol",
-      endPrice: 0,
-      totalInvested: 0,
-      currentValue: 0,
-      totalProfit: 0,
-      totalProfitPct: 0,
-      cagrIrr: 0,
-      lotCount: 0,
-      perfSelected: 0,
-      dripSeries: [],
-      timeLabels: []
+      expRatio: 0, p1w: 0, p2w: 0, p1m: 0, p3m: 0, p6m: 0, p1y: 0, p3y: 0, p5y: 0,
+      vol: 0, maxDd: 0, valScore: 0, signalText: "Type Ticker", signalClass: "signal-fair",
+      endPrice: 0, totalInvested: 0, currentValue: 0, totalProfit: 0, totalProfitPct: 0, cagrIrr: 0, lotCount: 0,
+      dripSeries: [], timeLabels: []
     };
   }
 
   const assetType = getAssetType(ticker);
   const categoryName = getFundCategoryName(ticker);
-  const fallback = getDatabaseFallbackData(ticker, horizonKey, customStart);
+  const dbAsset = RealMarketDatabase[ticker];
+  const fallback = dbAsset || generateFallbackAsset(ticker);
 
   const endPrice = fallback.currentPrice || 100;
-  const pricePoints = fallback.pricePoints || [];
+  const divYield = fallback.annualDivRate ? (fallback.annualDivRate / endPrice) * 100 : (assetType === "MUTUAL" ? 2.85 : 1.95);
 
-  const dbAsset = RealMarketDatabase[ticker];
-  const divYield = dbAsset ? (dbAsset.annualDivRate / dbAsset.currentPrice) * 100 : (assetType === "MUTUAL" ? 2.85 : 1.95);
+  const expRatio = fallback.expRatio !== undefined ? fallback.expRatio : (assetType === "MUTUAL" ? 0.65 : 0.08);
+  const vol = fallback.vol !== undefined ? fallback.vol : (assetType === "MUTUAL" ? 14.2 : 17.5);
+  const maxDd = fallback.maxDd !== undefined ? fallback.maxDd : -18.5;
+
+  const p1w = getPeriodReturnPct(ticker, "1W", endPrice);
+  const p2w = getPeriodReturnPct(ticker, "2W", endPrice);
+  const p1m = getPeriodReturnPct(ticker, "1M", endPrice);
+  const p3m = getPeriodReturnPct(ticker, "3M", endPrice);
+  const p6m = getPeriodReturnPct(ticker, "6M", endPrice);
+  const p1y = getPeriodReturnPct(ticker, "1Y", endPrice);
+  const p3y = getPeriodReturnPct(ticker, "3Y", endPrice);
+  const p5y = getPeriodReturnPct(ticker, "5Y", endPrice);
 
   let lots = item.lots;
   if (!lots || lots.length === 0) {
@@ -853,17 +900,14 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
   if (activeMatrixStrategy === "DCA") {
     const freqPeriodsMap = { "WEEKLY": 52, "BIWEEKLY": 26, "MONTHLY": 12 };
     const periodsPerYear = freqPeriodsMap[matrixDcaFrequency] || 26;
-    const horizonYearsMap = { "1M": 1/12, "3M": 3/12, "6M": 0.5, "YTD": 0.6, "1Y": 1, "3Y": 3, "5Y": 5, "10Y": 10, "MAX": 10 };
-    const yrs = horizonYearsMap[horizonKey] || 5;
+    const yrs = 5;
     const totalPeriods = Math.max(1, Math.round(yrs * periodsPerYear));
 
     totalInvested = matrixDcaAmount * totalPeriods;
-
-    const avgEntryDiscount = Math.max(0.35, 1 - (yrs * 0.08));
+    const avgEntryDiscount = 0.60;
     const avgDcaPrice = endPrice * avgEntryDiscount;
     totalShares = avgDcaPrice > 0 ? totalInvested / avgDcaPrice : 0;
-
-    const divBoost = 1 + (divYield / 100) * (yrs / 2);
+    const divBoost = 1 + (divYield / 100) * 2.5;
     currentValue = totalShares * endPrice * divBoost;
 
   } else if (activeMatrixStrategy === "PRICE" || activeMatrixStrategy === "LUMP") {
@@ -874,7 +918,7 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
       const sharesBought = buyPrice > 0 ? amt / buyPrice : 0;
       totalShares += sharesBought;
     });
-    currentValue = totalShares * endPrice; // Pure price, no reinvestment boost
+    currentValue = totalShares * endPrice;
 
   } else {
     // DRIP (Dividend Reinvestment)
@@ -899,25 +943,28 @@ function buildMatrixRowData(item, horizonKey, customStart = null, customEnd = nu
     ? (Math.pow(currentValue / totalInvested, 1 / yrsElapsed) - 1) * 100
     : 0;
 
-  const dripSeries = pricePoints.map(p => p.price);
-  const timeLabels = pricePoints.map(p => p.dateLabel);
+  // Transparent Valuation Score Methodology
+  const valScore = (p1m * 0.15) + (p3m * 0.25) + (p1y * 0.60) + (divYield * 1.5) - (vol * 0.2) - (expRatio * 5);
+
+  let signalText = "Fair Value";
+  let signalClass = "signal-fair";
+  if (valScore >= 12.0) {
+    signalText = "🔥 Strong Buy";
+    signalClass = "signal-buy";
+  } else if (valScore >= 5.0) {
+    signalText = "🟢 Buy Candidate";
+    signalClass = "signal-buy";
+  } else if (valScore < -2.0) {
+    signalText = "⚠️ Overvalued";
+    signalClass = "signal-overvalued";
+  }
 
   return {
-    item,
-    ticker,
-    assetType,
-    categoryName,
-    endPrice,
-    divYield,
-    totalInvested,
-    currentValue,
-    totalProfit,
-    totalProfitPct,
-    cagrIrr,
-    lotCount: lots.length,
-    perfSelected: totalProfitPct,
-    dripSeries,
-    timeLabels
+    item, ticker, assetType, categoryName, expRatio,
+    p1w, p2w, p1m, p3m, p6m, p1y, p3y, p5y,
+    vol, maxDd, valScore, signalText, signalClass,
+    endPrice, divYield, totalInvested, currentValue, totalProfit, totalProfitPct, cagrIrr,
+    lotCount: lots.length, perfSelected: p1y
   };
 }
 
@@ -994,7 +1041,7 @@ function renderComparisonMatrix(focusId = null) {
   if (!tbody) return;
 
   const filteredItems = comparisonMatrixData.filter(item => {
-    if (!item.ticker) return true; // always show new blank rows
+    if (!item.ticker) return true;
     const type = getAssetType(item.ticker);
     if (activeAssetFilter === "MUTUAL") return type === "MUTUAL";
     if (activeAssetFilter === "ETF") return type !== "MUTUAL";
@@ -1002,7 +1049,7 @@ function renderComparisonMatrix(focusId = null) {
   });
 
   if (filteredItems.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:24px; color:var(--text-dim);">No matching assets for active filter. Click "+ Add Fund / Stock" above.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding:24px; color:var(--text-dim);">No matching assets for active filter. Click "+ Add Fund / Stock" above.</td></tr>`;
     renderMultiAssetChart([]);
     return;
   }
@@ -1011,22 +1058,25 @@ function renderComparisonMatrix(focusId = null) {
     buildMatrixRowData(item, activeLongHorizon, matrixCustomStartDate, matrixCustomEndDate)
   );
 
-  tbody.innerHTML = "";
+  // Column Sorting Logic
+  results.sort((a, b) => {
+    let valA = a[matrixSortCol];
+    let valB = b[matrixSortCol];
 
-  const validReturns = results.filter(r => r.ticker !== "").map(r => r.perfSelected);
-  const maxReturn = validReturns.length > 0 ? Math.max(...validReturns) : 10;
+    if (typeof valA === "string") {
+      return matrixSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    }
+
+    valA = valA !== undefined ? valA : -999;
+    valB = valB !== undefined ? valB : -999;
+
+    return matrixSortAsc ? valA - valB : valB - valA;
+  });
+
+  tbody.innerHTML = "";
 
   results.forEach(data => {
     const tr = document.createElement("tr");
-
-    let signalHtml = `<span class="signal-badge signal-fair">⚖️ Fair Value</span>`;
-    if (!data.ticker) {
-      signalHtml = `<span class="signal-badge signal-fair">✏️ Type Ticker</span>`;
-    } else if (data.divYield > 4.2 || (data.cagrIrr > 12.0 && data.perfSelected >= maxReturn * 0.85)) {
-      signalHtml = `<span class="signal-badge signal-buy">🔥 Strong Buy</span>`;
-    } else if (data.cagrIrr < 4.0 || data.perfSelected < maxReturn * 0.35) {
-      signalHtml = `<span class="signal-badge signal-overvalued">⚠️ Lower Yield</span>`;
-    }
 
     const typeBadge = data.assetType === "MUTUAL" 
       ? `<span class="badge-mf">MUTUAL FUND</span>` 
@@ -1035,7 +1085,9 @@ function renderComparisonMatrix(focusId = null) {
     const isFocusTarget = data.item.id === focusId;
     const inputStyle = !data.ticker
       ? "width:110px; font-weight:800; text-transform:uppercase; border: 2px solid var(--primary-accent); background: rgba(0,230,153,0.25);"
-      : "width:85px; font-weight:800; text-transform:uppercase;";
+      : "width:80px; font-weight:800; text-transform:uppercase;";
+
+    const scoreMethodTooltip = `Methodology Score: ${data.valScore.toFixed(1)}\n• 1Y Momentum: ${data.p1y.toFixed(1)}%\n• Yield: ${data.divYield.toFixed(2)}%\n• Vol Penalty: -${(data.vol * 0.2).toFixed(1)}\n• Exp Ratio Drag: -${(data.expRatio * 5).toFixed(2)}`;
 
     tr.innerHTML = `
       <td>
@@ -1044,19 +1096,20 @@ function renderComparisonMatrix(focusId = null) {
           ${typeBadge}
         </div>
       </td>
-      <td style="color:var(--text-muted); font-size:0.8rem;">${data.categoryName}</td>
-      <td style="font-family:var(--font-mono); font-weight:700;">${data.ticker ? formatCurrency(data.totalInvested) : '--'}</td>
-      <td style="font-family:var(--font-mono); font-weight:700; color: #ffffff;">${data.ticker ? formatCurrency(data.currentValue) : '--'}</td>
-      <td class="${data.totalProfit >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:700;">
-        ${data.ticker ? formatSign(data.totalProfit) + formatCurrency(data.totalProfit) : '--'}
-        ${data.ticker ? `<br><span style="font-size:0.75rem; opacity:0.85;">(${formatSign(data.totalProfitPct)}${data.totalProfitPct.toFixed(1)}%)</span>` : ''}
-      </td>
-      <td class="${data.cagrIrr >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:800;">
-        ${data.ticker ? formatSign(data.cagrIrr) + data.cagrIrr.toFixed(1) + '% / yr' : '--'}
-      </td>
-      <td>${signalHtml}</td>
+      <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted); text-align:center;">${data.ticker ? data.expRatio.toFixed(2) + '%' : '--'}</td>
+      <td class="${data.p1w >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:600; text-align:right;">${data.ticker ? formatSign(data.p1w) + data.p1w.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.p2w >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:600; text-align:right;">${data.ticker ? formatSign(data.p2w) + data.p2w.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.p1m >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:600; text-align:right;">${data.ticker ? formatSign(data.p1m) + data.p1m.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.p3m >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:600; text-align:right;">${data.ticker ? formatSign(data.p3m) + data.p3m.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.p6m >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:600; text-align:right;">${data.ticker ? formatSign(data.p6m) + data.p6m.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.p1y >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:700; text-align:right;">${data.ticker ? formatSign(data.p1y) + data.p1y.toFixed(1) + '%' : '--'}</td>
+      <td class="${data.p3y >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:700; text-align:right;">${data.ticker ? formatSign(data.p3y) + data.p3y.toFixed(1) + '%/yr' : '--'}</td>
+      <td class="${data.p5y >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono); font-weight:800; text-align:right;">${data.ticker ? formatSign(data.p5y) + data.p5y.toFixed(1) + '%/yr' : '--'}</td>
+      <td style="font-family:var(--font-mono); font-size:0.8rem; color:#f59e0b; text-align:center;">${data.ticker ? data.vol.toFixed(1) + '%' : '--'}</td>
+      <td style="font-family:var(--font-mono); font-size:0.8rem; color:#ef4444; text-align:center;">${data.ticker ? data.maxDd.toFixed(1) + '%' : '--'}</td>
+      <td style="text-align:center;"><span class="signal-badge ${data.signalClass}" title="${scoreMethodTooltip}" style="cursor:help;">${data.signalText}</span></td>
       <td>
-        <div style="display:flex; gap:6px; align-items:center;">
+        <div style="display:flex; gap:6px; align-items:center; justify-content:center;">
           <button class="btn btn-sm btn-secondary configure-lots-btn" style="padding:4px 8px; font-size:0.75rem;" title="Configure Purchase Dates & Contributions">
             ⚙️ Buys (${data.lotCount})
           </button>
@@ -1965,9 +2018,13 @@ async function renderWatchlist() {
 }
 
 function addToWatchlist() {
-  const symbol = document.getElementById("ticker-input").value.toUpperCase().trim() || "SPY";
-  const amount = parseFloat(document.getElementById("initial-investment").value) || 10000;
-  const date = getSelectedDropdownDate();
+  const quickTicker = document.getElementById("wl-quick-ticker")?.value.toUpperCase().trim();
+  const quickDate = document.getElementById("wl-quick-date")?.value;
+  const quickAmount = parseFloat(document.getElementById("wl-quick-amount")?.value);
+
+  const symbol = quickTicker || document.getElementById("ticker-input").value.toUpperCase().trim() || "SPY";
+  const amount = !isNaN(quickAmount) && quickAmount > 0 ? quickAmount : (parseFloat(document.getElementById("initial-investment").value) || 10000);
+  const date = quickDate || getSelectedDropdownDate() || "2021-08-01";
   
   const sharesInput = document.getElementById("custom-shares-input");
   const shares = sharesInput && sharesInput.value ? parseFloat(sharesInput.value) : null;
@@ -1984,7 +2041,17 @@ function addToWatchlist() {
   }
 
   localStorage.setItem("accurate_ror_watchlist", JSON.stringify(watchlist));
+
+  if (document.getElementById("wl-quick-ticker")) {
+    document.getElementById("wl-quick-ticker").value = "";
+  }
+
   renderWatchlist();
+
+  // Ensure ticker is also in Choice Funds & ETF Matrix
+  if (!comparisonMatrixData.some(item => item.ticker === symbol)) {
+    addComparisonRow(symbol);
+  }
 }
 
 function removeFromWatchlist(event, index) {
