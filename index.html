@@ -63,6 +63,11 @@
             <button class="chip-btn" data-ticker="MSFT">MSFT (Microsoft)</button>
             <button class="chip-btn" data-ticker="QQQ">QQQ (Nasdaq 100)</button>
           </div>
+          <div class="preset-tickers" id="recent-history-wrapper" style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; display: none;">
+            <span class="preset-label" style="color: var(--primary-accent); font-weight: 700;">🕒 Local Stock History:</span>
+            <div id="recent-stocks-chips" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;"></div>
+            <button id="clear-recent-history-btn" class="btn btn-sm btn-outline-danger" style="padding: 2px 8px; font-size: 0.7rem; margin-left: 8px;" title="Clear Local Stock History">Clear History</button>
+          </div>
         </div>
 
         <!-- Time Horizon & Investment Settings -->

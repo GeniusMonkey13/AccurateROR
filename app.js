@@ -353,6 +353,8 @@ async function fetchRealMarketData(ticker, horizon, customDateStr = null) {
 document.addEventListener("DOMContentLoaded", () => {
   populateDateDropdowns();
   initEventListeners();
+  restoreCalculatorState();
+  renderRecentHistory();
   calculateAndRender();
   renderWatchlist();
   renderComparisonMatrix();
@@ -642,9 +644,16 @@ function initEventListeners() {
   const saveLotsBtn = document.getElementById("save-lots-btn");
   if (saveLotsBtn) {
     saveLotsBtn.addEventListener("click", () => {
+      saveMatrixToLocalStorage();
       closeLotsModal();
       renderComparisonMatrix();
     });
+  }
+
+  // Clear Recent History Button
+  const clearHistoryBtn = document.getElementById("clear-recent-history-btn");
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener("click", clearRecentHistory);
   }
 
   // Sortable Table Headers
@@ -671,8 +680,8 @@ function initEventListeners() {
   });
 }
 
-// Global Comparison Matrix State & Multi-Asset Chart Instance
-let comparisonMatrixData = [
+// Local Storage Persistence Helpers for Matrix & Recent History
+const DEFAULT_MATRIX_ASSETS = [
   { id: "asset_1", ticker: "FSELX" }, // Mutual Fund - Fidelity Tech
   { id: "asset_2", ticker: "VVOAX" }, // Mutual Fund - Invesco Mid-Cap Value
   { id: "asset_3", ticker: "VOO" },   // ETF - Vanguard S&P 500
@@ -683,6 +692,124 @@ let comparisonMatrixData = [
   { id: "asset_8", ticker: "SCHD" },  // ETF - Schwab Dividend Equity
   { id: "asset_9", ticker: "VFIAX" }  // Mutual Fund - Vanguard 500 Index
 ];
+
+function loadSavedMatrixData() {
+  try {
+    const saved = localStorage.getItem("accurate_ror_matrix_data");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (err) {
+    console.warn("Error loading matrix from localStorage", err);
+  }
+  return DEFAULT_MATRIX_ASSETS;
+}
+
+function saveMatrixToLocalStorage() {
+  try {
+    localStorage.setItem("accurate_ror_matrix_data", JSON.stringify(comparisonMatrixData));
+  } catch (err) {
+    console.warn("Error saving matrix to localStorage", err);
+  }
+}
+
+let recentStockHistory = [];
+try {
+  recentStockHistory = JSON.parse(localStorage.getItem("accurate_ror_recent_stocks") || "[]");
+} catch (e) {
+  recentStockHistory = [];
+}
+
+function saveToRecentHistory(rawTicker) {
+  if (!rawTicker) return;
+  const ticker = rawTicker.toUpperCase().trim();
+  if (!ticker || ticker === "TICKER...") return;
+
+  recentStockHistory = recentStockHistory.filter(t => t !== ticker);
+  recentStockHistory.unshift(ticker);
+  if (recentStockHistory.length > 12) recentStockHistory = recentStockHistory.slice(0, 12);
+
+  try {
+    localStorage.setItem("accurate_ror_recent_stocks", JSON.stringify(recentStockHistory));
+  } catch (e) {}
+
+  renderRecentHistory();
+}
+
+function renderRecentHistory() {
+  const container = document.getElementById("recent-stocks-chips");
+  const wrapper = document.getElementById("recent-history-wrapper");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!recentStockHistory || recentStockHistory.length === 0) {
+    if (wrapper) wrapper.style.display = "none";
+    return;
+  }
+
+  if (wrapper) wrapper.style.display = "flex";
+
+  recentStockHistory.forEach(ticker => {
+    const chip = document.createElement("button");
+    chip.className = "chip-btn";
+    chip.style.borderColor = "var(--primary-accent)";
+    chip.style.fontWeight = "700";
+    chip.textContent = ticker;
+    chip.addEventListener("click", () => {
+      document.getElementById("ticker-input").value = ticker;
+      calculateAndRender();
+      if (!comparisonMatrixData.some(m => m.ticker === ticker)) {
+        addComparisonRow(ticker);
+      }
+    });
+    container.appendChild(chip);
+  });
+}
+
+function clearRecentHistory() {
+  recentStockHistory = [];
+  try {
+    localStorage.removeItem("accurate_ror_recent_stocks");
+  } catch (e) {}
+  renderRecentHistory();
+}
+
+function saveCalculatorState(state) {
+  try {
+    localStorage.setItem("accurate_ror_last_search", JSON.stringify(state));
+  } catch (e) {}
+}
+
+function restoreCalculatorState() {
+  try {
+    const saved = localStorage.getItem("accurate_ror_last_search");
+    if (saved) {
+      const state = JSON.parse(saved);
+      if (state.symbol && document.getElementById("ticker-input")) {
+        document.getElementById("ticker-input").value = state.symbol;
+      }
+      if (state.initialPrincipal && document.getElementById("initial-investment")) {
+        document.getElementById("initial-investment").value = state.initialPrincipal;
+      }
+      if (state.strategyMode && document.getElementById("strategy-select")) {
+        document.getElementById("strategy-select").value = state.strategyMode;
+      }
+      if (state.dcaMonthlyAmount && document.getElementById("dca-amount-input")) {
+        document.getElementById("dca-amount-input").value = state.dcaMonthlyAmount;
+      }
+      if (state.horizon) {
+        document.querySelectorAll(".horizon-btn").forEach(b => {
+          b.classList.toggle("active", b.dataset.horizon === state.horizon);
+        });
+      }
+    }
+  } catch (e) {}
+}
+
+// Global Comparison Matrix State & Multi-Asset Chart Instance
+let comparisonMatrixData = loadSavedMatrixData();
 let activeAssetFilter = "ALL";
 let activeLongHorizon = "5Y";
 let activeChartType = "BAR";
@@ -762,6 +889,9 @@ function addComparisonRow(rawTicker = "") {
     ticker: ticker
   });
 
+  saveMatrixToLocalStorage();
+  if (ticker) saveToRecentHistory(ticker);
+
   if (inputEl) inputEl.value = "";
   renderComparisonMatrix(newId);
 }
@@ -778,6 +908,7 @@ function loadETradePreset() {
     { id: "asset_8", ticker: "SCHD" },
     { id: "asset_9", ticker: "VFIAX" }
   ];
+  saveMatrixToLocalStorage();
   renderComparisonMatrix();
 }
 
@@ -790,11 +921,13 @@ function loadMutualPreset() {
     { id: "asset_mf5", ticker: "VVOAX" },
     { id: "asset_mf6", ticker: "EIGMX" }
   ];
+  saveMatrixToLocalStorage();
   renderComparisonMatrix();
 }
 
 function removeComparisonRow(id) {
   comparisonMatrixData = comparisonMatrixData.filter(item => item.id !== id);
+  saveMatrixToLocalStorage();
   renderComparisonMatrix();
 }
 
@@ -1130,6 +1263,8 @@ function renderComparisonMatrix(focusId = null) {
       const targetItem = comparisonMatrixData.find(w => w.id === data.item.id);
       if (targetItem) {
         targetItem.ticker = tInput.value.toUpperCase().trim();
+        saveMatrixToLocalStorage();
+        if (targetItem.ticker) saveToRecentHistory(targetItem.ticker);
       }
       renderComparisonMatrix();
     });
@@ -1717,6 +1852,10 @@ async function calculateAndRender() {
     renderTable(currentData);
     renderDailyPriceTable(currentData.dailyRecords);
     renderComparisonMatrix();
+
+    // Save to Local Storage History & State
+    saveToRecentHistory(symbol);
+    saveCalculatorState({ symbol, horizon, initialPrincipal, strategyMode, dcaMonthlyAmount });
     
     updateLoadingProgress(100, "Done");
   } catch (err) {
