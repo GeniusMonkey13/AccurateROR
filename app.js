@@ -540,6 +540,15 @@ function initEventListeners() {
   const loadMutualBtn = document.getElementById("load-mutual-preset-btn");
   if (loadMutualBtn) loadMutualBtn.addEventListener("click", loadMutualPreset);
 
+  const resetMatrixBtn = document.getElementById("reset-matrix-btn");
+  if (resetMatrixBtn) {
+    resetMatrixBtn.addEventListener("click", () => {
+      comparisonMatrixData = sanitizeMatrixData([ ...DEFAULT_MATRIX_ASSETS ]);
+      saveMatrixToLocalStorage();
+      renderComparisonMatrix();
+    });
+  }
+
   // Filter Pills
   document.querySelectorAll(".filter-pill").forEach(pill => {
     pill.addEventListener("click", (e) => {
@@ -693,12 +702,36 @@ const DEFAULT_MATRIX_ASSETS = [
   { id: "asset_9", ticker: "VFIAX" }  // Mutual Fund - Vanguard 500 Index
 ];
 
+function sanitizeMatrixData(data) {
+  if (!Array.isArray(data)) return DEFAULT_MATRIX_ASSETS;
+
+  const seen = new Set();
+  const cleaned = [];
+
+  for (const item of data) {
+    if (!item || typeof item !== "object") continue;
+    const ticker = (item.ticker || "").toUpperCase().trim();
+
+    if (!ticker || ticker === "TICKER..." || ticker.includes("SELECT") || ticker.length > 8) continue;
+    if (seen.has(ticker)) continue;
+    seen.add(ticker);
+
+    cleaned.push({
+      id: item.id || `asset_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      ticker: ticker,
+      lots: Array.isArray(item.lots) ? item.lots : undefined
+    });
+  }
+
+  return cleaned.length > 0 ? cleaned : DEFAULT_MATRIX_ASSETS;
+}
+
 function loadSavedMatrixData() {
   try {
     const saved = localStorage.getItem("accurate_ror_matrix_data");
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      return sanitizeMatrixData(parsed);
     }
   } catch (err) {
     console.warn("Error loading matrix from localStorage", err);
@@ -708,7 +741,11 @@ function loadSavedMatrixData() {
 
 function saveMatrixToLocalStorage() {
   try {
-    localStorage.setItem("accurate_ror_matrix_data", JSON.stringify(comparisonMatrixData));
+    const validData = comparisonMatrixData.filter(item => {
+      const t = (item.ticker || "").toUpperCase().trim();
+      return t && t !== "TICKER..." && !t.includes("SELECT") && t.length <= 8;
+    });
+    localStorage.setItem("accurate_ror_matrix_data", JSON.stringify(validData));
   } catch (err) {
     console.warn("Error saving matrix to localStorage", err);
   }
@@ -724,7 +761,7 @@ try {
 function saveToRecentHistory(rawTicker) {
   if (!rawTicker) return;
   const ticker = rawTicker.toUpperCase().trim();
-  if (!ticker || ticker === "TICKER...") return;
+  if (!ticker || ticker === "TICKER..." || ticker.length > 8) return;
 
   recentStockHistory = recentStockHistory.filter(t => t !== ticker);
   recentStockHistory.unshift(ticker);
@@ -760,9 +797,7 @@ function renderRecentHistory() {
     chip.addEventListener("click", () => {
       document.getElementById("ticker-input").value = ticker;
       calculateAndRender();
-      if (!comparisonMatrixData.some(m => m.ticker === ticker)) {
-        addComparisonRow(ticker);
-      }
+      // NOTE: Searching recent stocks does NOT auto-inject into Choice Funds Matrix
     });
     container.appendChild(chip);
   });
@@ -876,6 +911,21 @@ function addComparisonRow(rawTicker = "") {
   const inputEl = document.getElementById("add-asset-ticker-input");
   let ticker = (rawTicker || (inputEl ? inputEl.value : "")).toUpperCase().trim();
 
+  // Validate ticker: do NOT add if empty, blank, or placeholder strings
+  if (!ticker || ticker === "TICKER..." || ticker.includes("SELECT") || ticker.length > 8) return;
+
+  // De-duplicate: if ticker already exists, navigate to it instead of adding a duplicate row
+  const existingItem = comparisonMatrixData.find(m => (m.ticker || "").toUpperCase().trim() === ticker);
+  if (existingItem) {
+    if (inputEl) inputEl.value = "";
+    activeAssetFilter = "ALL";
+    document.querySelectorAll(".filter-pill").forEach(p => {
+      p.classList.toggle("active", p.dataset.assetFilter === "ALL");
+    });
+    renderComparisonMatrix(existingItem.id);
+    return;
+  }
+
   // Reset filter to "ALL" so newly added asset is always visible
   activeAssetFilter = "ALL";
   document.querySelectorAll(".filter-pill").forEach(p => {
@@ -890,7 +940,7 @@ function addComparisonRow(rawTicker = "") {
   });
 
   saveMatrixToLocalStorage();
-  if (ticker) saveToRecentHistory(ticker);
+  saveToRecentHistory(ticker);
 
   if (inputEl) inputEl.value = "";
   renderComparisonMatrix(newId);
